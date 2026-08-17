@@ -1,0 +1,87 @@
+import pygame as ui
+import math
+
+class TriangularShape():
+    def __init__(self, x, y, width, height, color):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.color = color
+
+    def list_triangles(self):
+        '''
+        List all the triangle in the shape
+        '''
+        return []
+
+    def draw(self, screen):
+        '''
+        Draw the shape on the screen
+        '''
+        triangles = self.list_triangles()
+        for triangle in triangles:
+            ui.draw.polygon(screen, self.color, triangle)
+
+class Square(TriangularShape):
+    def __init__(self, x, y, size, color):
+        super().__init__(x, y, size, size, color)
+
+    def list_triangles(self):
+        tl = (self.x, self.y)
+        tr = (self.x + self.width, self.y)
+        bl = (self.x, self.y + self.height)
+        br = (self.x + self.width, self.y + self.height)
+
+        triangle1 = [tl, tr, bl]
+        triangle2 = [tr, br, bl]
+
+        return [triangle1, triangle2]
+
+class Rectangle(TriangularShape):
+    def __init__(self, x, y, width, height, color):
+        super().__init__(x, y, width, height, color)
+
+    def list_triangles(self):
+        tl = (self.x, self.y)
+        tr = (self.x + self.width, self.y)
+        bl = (self.x, self.y + self.height)
+        br = (self.x + self.width, self.y + self.height)
+
+        triangle1 = [tl, tr, bl]
+        triangle2 = [tr, br, bl]
+
+        return [triangle1, triangle2]
+
+class Triangle(TriangularShape):
+    def __init__(self, x, y, widht, height,color):
+        super().__init__(x, y, widht, height, color)
+
+    def list_triangles(self):
+        tl = (self.x, self.y)
+        tr = (self.x + self.width, self.y)
+        bl = (self.x + self.width / 2, self.y + self.height)
+
+        triangle1 = [tl, tr, bl]
+
+        return [triangle1]
+    
+class Circle(TriangularShape):
+    def __init__(self, x, y, radius, color, parts):
+        super().__init__(x, y, radius * 2, radius * 2, color)
+        self.radius = radius
+        self.parts = parts
+
+    def list_triangles(self):
+        angle = 360 / self.parts
+        triangles = []
+
+        for i in range(self.parts):
+            c = (self.x, self.y)
+            a = (self.x + self.radius * math.cos(math.radians(i * angle)), self.y + self.radius * math.sin(math.radians(i * angle)))
+            b = (self.x + self.radius * math.cos(math.radians((i + 1) * angle)), self.y + self.radius * math.sin(math.radians((i + 1) * angle)))
+
+            triangle = [c, a, b]
+            triangles.append(triangle)
+
+        return triangles
