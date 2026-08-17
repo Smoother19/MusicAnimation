@@ -2,6 +2,20 @@ import pygame as ui
 import math
 
 class TriangularShape():
+    '''
+    Base class for triangular shapes
+
+    Attributes:
+        x (int): x position of the shape
+        y (int): y position of the shape
+        width (int): width of the shape
+        height (int): height of the shape
+        color (tuple): color of the shape
+
+    Methods:
+        list_triangles(): List all the triangle in the shape
+        draw(screen): Draw the shape on the screen
+    '''
     def __init__(self, x, y, width, height, color):
         self.x = x
         self.y = y
@@ -67,6 +81,16 @@ class Triangle(TriangularShape):
         return [triangle1]
     
 class Circle(TriangularShape):
+    '''
+    Circle class
+
+    Attributes:
+        x (int): x position of the circle
+        y (int): y position of the circle
+        radius (int): radius of the circle
+        color (tuple): color of the circle
+        parts (int): number of parts to split the circle into
+    '''
     def __init__(self, x, y, radius, color, parts):
         super().__init__(x, y, radius * 2, radius * 2, color)
         self.radius = radius
