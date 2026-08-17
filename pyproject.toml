@@ -1,0 +1,23 @@
+[project]
+name = "musicanimation"
+version = "0.1.0"
+description = "MusicAnimation"
+readme = "README.md"
+authors = [
+    { name = "Gabriel", email = "gabriel@ik.me" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "librosa>=1.0.0",
+    "midiutil>=1.2.1",
+    "numpy>=2.5.2",
+    "pygame>=2.6.1",
+    "sound-to-midi>=0.0.3",
+]
+
+[project.scripts]
+musicanimation = "musicanimation:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
