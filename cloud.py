@@ -38,6 +38,14 @@ class Cloud(TriangularShape):
         self.points = self.generate_clouds_points()
         self.list_triangle = self.points_to_triangle()
 
+
+    def get_random_param():
+        rad = random.randint(40, 90)
+        center = (random.randint(50, 250), random.randint(50, 250))
+        color = "white"
+        harmonics = random.randint(3, 10)
+        return (rad, center, color, 100, 0.35, harmonics)
+
     def generate_clouds_points(self):
         cx, cy = self.center
         harmonics = []#3 formulas to calculate the radius of each point

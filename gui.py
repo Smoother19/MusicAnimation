@@ -21,9 +21,6 @@ def start_gui():
 
 def gui(screen: ui.display):
     clouds = []
-    cloud_base = Cloud(60, (100, 100), (41, 43, 67))
-    clouds.append(cloud_base)
-
     RUNNING = True
     while RUNNING:
         for event in ui.event.get():
@@ -32,6 +29,8 @@ def gui(screen: ui.display):
             if event.type == ui.KEYDOWN:
                 if event.key == ui.K_c:
                     print("test")
+                    params = Cloud.get_random_param()
+                    clouds.append(Cloud(*params))
 
 
         screen.fill((0, 0, 0))
