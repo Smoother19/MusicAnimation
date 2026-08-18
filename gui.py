@@ -19,21 +19,39 @@ def start_gui():
     clock = ui.time.Clock()
     gui(screen)
 
-cloud_base = Cloud(60, (100, 100), (41, 43, 67))
-
 def gui(screen: ui.display):
+    clouds = []
+    cloud_base = Cloud(60, (100, 100), (41, 43, 67))
+    clouds.append(cloud_base)
+
     RUNNING = True
     while RUNNING:
         for event in ui.event.get():
             if event.type == ui.QUIT:
                 RUNNING = False
+            if event.type == ui.KEYDOWN:
+                if event.key == ui.K_c:
+                    print("test")
+
 
         screen.fill((0, 0, 0))
         for shape in shapes:
             shape.draw(screen)
 
-        cloud_base.draw(screen)
-        cloud_base.moving_cloud()
+        clouds_left = []
+        #Test if the cloudas list is not empty
+        if clouds:
+            for cloud in clouds:
+                cloud.draw(screen)
+                cloud.moving_cloud()
+
+                #Add to temp list the non valid clouds
+                if not cloud.is_out_of_screen(SCREEN_WIDTH):
+                    clouds_left.append(cloud)
+
+        #Update clouds list
+        clouds = clouds_left
+
         ui.display.flip()
 
     ui.quit()
