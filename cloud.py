@@ -81,6 +81,14 @@ class Cloud(TriangularShape):
         for triangle in self.list_triangle:
             triangle.setX(speed, speed, speed)
 
+    def is_out_of_screen(self, screen_width):
+        for triangle in self.list_triangle:
+            for x in triangle.getX():
+                if x + self.width <= screen_width:
+                    return False
+
+        return True
+
     def draw(self, screen):
         for triangle in self.list_triangle:
             triangle.draw(screen)
