@@ -1,40 +1,55 @@
 import pygame as ui
 from shapes import *
 from train import Train
+import random
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
-
-RAIL_Y = SCREEN_HEIGHT * 0.78
+RAIL_Y = SCREEN_HEIGHT - 180
+SPEED = 100.0 
 BACKGROUND = (18, 18, 34)
 
-def build_scene():
-    decor = [
-        Rectangle(SCREEN_WIDTH / 2, RAIL_Y + 3, SCREEN_WIDTH, 6, (96, 92, 126)),
-        Rectangle(SCREEN_WIDTH / 2, RAIL_Y + 40, SCREEN_WIDTH, 80, (13, 13, 26)),
-    ]
-    train = Train(180, RAIL_Y, (50, 94, 140), wagons=2)
-    return decor, train
+def draw_rails(screen, y, offset):
+    ui.draw.polygon(screen, (52, 48, 44),
+                    [(0, y), (SCREEN_WIDTH, y), (SCREEN_WIDTH, y + 6), (0, y + 6)])
+    tie = 34
+    x = -(offset % tie)
+    while x < SCREEN_WIDTH:
+        ui.draw.polygon(screen, (70, 60, 52),
+                        [(x, y + 6), (x + 16, y + 6), (x + 16, y + 14), (x, y + 14)])
+        x += tie
 
 def draw_shapes(screen, shapes):
     for shape in shapes:
         shape.draw(screen)
 
     
-def gui(screen: ui.Surface, decor, train):
+def gui(screen: ui.Surface):
     RUNNING = True
     frame = 0
     clock = ui.time.Clock()
+    train = Train(y=RAIL_Y, n_wagons=random.randint(2, 5))
+    train.set_speed(SPEED, True)
+    train_x = (SCREEN_WIDTH - train.length) / 2   # le train reste centre
+    scroll = 0.0
     while RUNNING:
         dt = clock.tick(60) / 1000.0
         for event in ui.event.get():
             if event.type == ui.QUIT:
                 RUNNING = False
+            elif event.type == ui.KEYDOWN:
+                if event.key == ui.K_UP:
+                    train.accelerate(40)
+                elif event.key == ui.K_DOWN:
+                    train.accelerate(-40)
+
+        train.update(dt)
+        scroll -= train.speed * dt
 
         STATS["triangles"] = 0
         screen.fill(BACKGROUND)
-        draw_shapes(screen, decor)
-        train.draw(screen)
+        draw_rails(screen, RAIL_Y, scroll)
+        train.draw(screen, train_x, 0)
         ui.display.flip()
 
         frame += 1
@@ -48,8 +63,7 @@ def gui(screen: ui.Surface, decor, train):
 def start_gui():
     ui.init()
     screen = ui.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    decor, train = build_scene()
-    gui(screen, decor, train)
+    gui(screen)
 
 
 if __name__ == "__main__":
