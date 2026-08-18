@@ -12,7 +12,6 @@ dependencies = [
     "midiutil>=1.2.1",
     "numpy>=2.5.2",
     "pygame>=2.6.1",
-    "sound-to-midi>=0.0.3",
 ]
 
 [project.scripts]
