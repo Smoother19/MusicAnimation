@@ -42,10 +42,10 @@ class Square(TriangularShape):
         super().__init__(x, y, size, size, color)
 
     def list_triangles(self):
-        tl = (self.x, self.y)
-        tr = (self.x + self.width, self.y)
-        bl = (self.x, self.y + self.height)
-        br = (self.x + self.width, self.y + self.height)
+        tl = (self.x - self.width/2, self.y - self.height/2)
+        tr = (self.x + self.width/2, self.y - self.height/2)
+        bl = (self.x - self.width/2, self.y + self.height/2)
+        br = (self.x + self.width/2, self.y + self.height/2)
 
         triangle1 = [tl, tr, bl]
         triangle2 = [tr, br, bl]
@@ -57,10 +57,10 @@ class Rectangle(TriangularShape):
         super().__init__(x, y, width, height, color)
 
     def list_triangles(self):
-        tl = (self.x, self.y)
-        tr = (self.x + self.width, self.y)
-        bl = (self.x, self.y + self.height)
-        br = (self.x + self.width, self.y + self.height)
+        tl = (self.x - self.width/2, self.y - self.height/2)
+        tr = (self.x + self.width/2, self.y - self.height/2)
+        bl = (self.x - self.width/2, self.y + self.height/2)
+        br = (self.x + self.width/2, self.y + self.height/2)
 
         triangle1 = [tl, tr, bl]
         triangle2 = [tr, br, bl]
@@ -68,13 +68,13 @@ class Rectangle(TriangularShape):
         return [triangle1, triangle2]
 
 class Triangle(TriangularShape):
-    def __init__(self, x, y, widht, height,color):
-        super().__init__(x, y, widht, height, color)
+    def __init__(self, x, y, width, height, color):
+        super().__init__(x, y, width, height, color)
 
     def list_triangles(self):
-        tl = (self.x, self.y)
-        tr = (self.x + self.width, self.y)
-        bl = (self.x + self.width / 2, self.y + self.height)
+        tl = (self.x - self.width/2, self.y + self.height/2)
+        tr = (self.x + self.width/2, self.y + self.height/2)
+        bl = (self.x, self.y - self.height/2)
 
         triangle1 = [tl, tr, bl]
 
