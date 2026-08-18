@@ -1,6 +1,8 @@
 import pygame as ui
 import math
 
+def shade(color, k):
+    return tuple(max(0, min(255, int(c * k))) for c in color)
 class TriangularShape():
     '''
     Base class for triangular shapes
