@@ -37,6 +37,17 @@ class TriangularShape():
         for triangle in triangles:
             ui.draw.polygon(screen, self.color, triangle)
 
+    def getX(self):
+        '''
+        Get the list of the x of the triangular shape
+        '''
+        return []
+
+    def setX(self):
+        '''
+        Set new list of x of the triangular shape
+        '''
+
 class Square(TriangularShape):
     def __init__(self, x, y, size, color):
         super().__init__(x, y, size, size, color)
@@ -79,6 +90,28 @@ class Triangle(TriangularShape):
         triangle1 = [tl, tr, bl]
 
         return [triangle1]
+
+class TrianglePoints(TriangularShape):
+    '''
+    Create a triangle based on 3 points
+    '''
+    def __init__(self, a, b, c, width, height, color):
+        super().__init__(0, 0, width, height, color)
+        self.a = a
+        self.b = b
+        self.c = c
+
+    def list_triangles(self):
+        triangle1 = [self.a, self.b, self.c]
+        return [triangle1]
+
+    def getX(self):
+        return (self.a[0], self.b[0], self.c[0])
+
+    def setX(self, x_a, x_b, x_c):
+        self.a = (self.a[0] + x_a, self.a[1])
+        self.b = (self.b[0] + x_b, self.b[1])
+        self.c = (self.c[0] + x_c, self.c[1])
     
 class Circle(TriangularShape):
     '''
