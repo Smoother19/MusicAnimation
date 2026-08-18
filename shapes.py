@@ -1,8 +1,17 @@
 import pygame as ui
 import math
 
+FACET_STRENGTH = 0.12     # 0 = uniforme | 0.06 = leger relief | 0.25 = debug
+
+def facet(color, i):
+    if FACET_STRENGTH <= 0:
+        return color
+    return shade(color, 1.0 + FACET_STRENGTH * (2 * ((i * 0.6180339887) % 1.0) - 1))
+
 def shade(color, k):
     return tuple(max(0, min(255, int(c * k))) for c in color)
+
+STATS = {"Triangles": 0}
 class TriangularShape():
     '''
     Base class for triangular shapes
@@ -36,8 +45,10 @@ class TriangularShape():
         Draw the shape on the screen
         '''
         triangles = self.list_triangles()
-        for triangle in triangles:
-            ui.draw.polygon(screen, self.color, triangle)
+        triangles = self.list_triangles()
+        STATS["triangles"] += len(triangles)
+        for i, triangle in enumerate(triangles):
+            ui.draw.polygon(screen, facet(self.color, i), triangle)
 
 class Square(TriangularShape):
     def __init__(self, x, y, size, color):
