@@ -33,6 +33,7 @@ class TriangularShape():
         '''
         Draw the shape on the screen
         '''
+        print("omg i'm drawing something beautiful")
         triangles = self.list_triangles()
         for triangle in triangles:
             ui.draw.polygon(screen, self.color, triangle)
