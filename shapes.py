@@ -182,7 +182,10 @@ def _rgb(h, s, v):
  
  
 def make_palette(rng):
-    """Une teinte dominante + un accent complementaire, pour un train coherent."""
+    '''
+    make_palette(rng) -> dict
+    Generate a palette of colors for the train and its parts.
+    '''
     h = rng.random()
     return {
         "body":    _rgb(h, rng.uniform(0.45, 0.75), rng.uniform(0.55, 0.80)),
