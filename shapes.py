@@ -1,6 +1,7 @@
 import colorsys
 import pygame as ui
 import math
+import random
 
 FACET_STRENGTH = 0.12     # 0 = uniforme | 0.06 = leger relief | 0.25 = debug
 
@@ -93,6 +94,80 @@ class Triangle(TriangularShape):
         triangle1 = [tl, tr, bl]
 
         return [triangle1]
+
+class Curve(TriangularShape):
+    '''
+    Create curve based on triangular shape
+    the curve is based on a function that is draw
+    '''
+
+    def __init__(self, start, end, width, height, color, nb_control_points=4, variation=50, resolution=50):
+        super().__init__(start[0], start[1], width, height, color)
+        self.p_start = start
+        self.p_end = end
+        self.resolution = resolution
+
+        self.control_points = self.generate_control_points(nb_control_points, variation)
+
+    def generate_control_points(self, nb_points, variation):
+        '''
+        TODO : retourne une liste de points, en partant de 
+        '''
+        x = self.p_start[0]
+        y = self.p_start[1]
+        points = [(x, y)]
+
+        for new_point in range(nb_points):
+            delt_x = x + (self.p_end[0] - x) * new_point
+            delt_y = y + (self.p_end[1] - y) * new_point
+
+            offset_x = random.uniform(-variation, variation)
+            offset_y = random.uniform(-variation, variation)
+
+            points.append((delt_x + offset_x, delt_y + offset_y))
+
+        points.append(self.p_end)
+        return points
+
+    def point_at(self, t):
+        '''
+        TODO
+        '''
+        nb_segments = len(self.control_points) - 1 #there's more points than segment
+        temp_pos = t * nb_segments
+        seg_id = int(temp_pos)
+        t_local = temp_pos - seg_id
+
+        p_a = self.control_points[seg_id]
+        p_b = self.control_points[seg_id + 1]
+
+        x = p_a[0] + (p_b[0] - p_a[0]) * t_local # debut + distance * time
+        y = p_a[1] + (p_b[1] - p_a[1]) * t_local # debut + distance * time
+        return (x, y)
+
+    def get_points(self):
+        '''
+        
+        '''
+        points = []
+        for i in range(self.resolution):
+            t = i / (self.resolution - 1)
+            points.append(self.point_at(t))
+
+        return points
+
+    def list_triangles(self):
+        '''
+        dgbfgn
+        '''
+        points = self.get_points()
+        triangles = []
+        hw = self.width / 2
+
+        for i in range(len(points) - 1):
+            p1 = points[i]
+            p2 = points[i+1]
+
 
 class TrianglePoints(TriangularShape):
     '''
