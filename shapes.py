@@ -110,15 +110,33 @@ class Curve(TriangularShape):
         self.a = a
         self.b = b 
         self.c = c
+        self.rand = random.randint(0, 100)
 
-    def function(self, x):
+    def parabola(self, x):
         return self.a * math.pow(x, 2) + self.b * x + self.c
 
+    def sinus(self, x):
+        return self.a * math.sin(x * self.b + self.c)
+
+    def cosinus(self, x):
+        return self.a * math.cos(x * self.b + self.c)
+
+    def cubic(self, x):
+        return self.a * math.pow(x, 3) + self.b * x + self.c
+
     def point_at(self, t):
+        print(self.rand)
         x = self.p_start[0] + (self.p_end[0] - self.p_start[0]) * t 
 
         x_norm = -1 + 2 * t     #norm it to be used in function
-        y_shape = self.function(x_norm)
+        if self.rand <= 25:
+            y_shape = self.parabola(x_norm)
+        elif self.rand <= 50:
+            y_shape = self.sinus(x_norm)
+        elif self.rand <= 75:
+            y_shape = self.cosinus(x_norm)
+        else:
+            y_shape = self.cubic(x_norm)
 
         y = self.p_start[1] + (self.p_end[1] - self.p_start[1]) * t + y_shape * self.amplitude
 

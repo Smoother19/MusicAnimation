@@ -34,7 +34,7 @@ def gui(screen: ui.Surface):
     scroll = 0.0
     smoke = SmokeEmitter()
 
-    curve = Curve((0, 0), (300, 150), width=10, color=(255, 255, 255), a=-3, b=2, c=2)
+    curve = Curve((100, 100), (800, 500), width=10, color=(255, 255, 255), a=-3, b=2, c=2)
 
     while RUNNING:
         screen.fill(BACKGROUND)
