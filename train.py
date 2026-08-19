@@ -150,6 +150,12 @@ class Train(Group):
         amplitude = self.BOB_AMPLITUDE * min(1.0, self.speed / 90.0)
         self.y = self._base_y + math.sin(self._time * 7.0) * amplitude
 
+    def smoke_position(self, ox=0, oy=0):
+        loco = self.children[0]
+        ax, ay = self.smoke_anchor
+        return (ox + self.x + loco.x + ax,
+                oy + self.y + loco.y + ay)
+
     # briques communes
 
     def _chassis(self, g, length, wheel_r=None):
