@@ -47,7 +47,7 @@ class Cloud(Group):
         center = (random.randint(50, 250), random.randint(50, 250))
         color = (255, 255, 255)
         harmonics = random.randint(3, 10)
-        nb_point = random.randint(5, 100)
+        nb_point = random.randint(5, 20)
         return (rad, center, color, nb_point, 0.35, harmonics)
 
     def generate_clouds_points(self):
@@ -82,7 +82,8 @@ class Cloud(Group):
         for i in range(n):
             a = points[i]
             b = points[(i + 1) % n]
-            triangles.append(TrianglePoints(self.center, a, b, self.width, self.height, self.color))
+            faceted_color = facet(self.color, i)    #to create the difference of colors
+            triangles.append(TrianglePoints(self.center, a, b, self.width, self.height, faceted_color))
         return triangles
 
     def generate_cloud(self):
