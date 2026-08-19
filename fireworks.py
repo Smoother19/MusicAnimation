@@ -14,6 +14,7 @@ class Fireworks(TriangularShape):
 
     def __init__(self, x, y, color, nb_rays=30, min_speed=2, max_speed=10, gravity=0.15, lifespan=60, ray_width=4):
         super().__init__(x, y, 0, 0, color)
+        self.based_color = color
         self.gravity = gravity      #the gravity for the particule
         self.lifespan = lifespan    #life time of the firework
         self.ray_width = ray_width  #width of the ray of the firework
@@ -31,12 +32,21 @@ class Fireworks(TriangularShape):
         Update the age of the firework
         '''
         self.age += delta
+        self.color = self.get_color()
 
     def is_done(self):
         '''
         Returns True if the age of the firework is bigger or equal than the lifespan
         '''
         return self.age >= self.lifespan
+
+    def get_color(self):
+        '''
+        Get the actual color, gets darker with time
+        '''
+        new_frac = max(0, 1 - self.age / self.lifespan) #get the new percentage of the color removed based on time, if it's too small, takes 0
+        r, g, b = self.based_color
+        return (int(r * new_frac), (g * new_frac), (b * new_frac))
     
     def list_triangles(self):
         '''
