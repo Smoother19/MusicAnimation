@@ -45,7 +45,7 @@ class Cloud(Group):
     def get_random_param():
         rad = random.randint(40, 90)
         center = (random.randint(50, 250), random.randint(50, 250))
-        color = "white"
+        color = (255, 255, 255)
         harmonics = random.randint(3, 10)
         return (rad, center, color, 100, 0.35, harmonics)
 
