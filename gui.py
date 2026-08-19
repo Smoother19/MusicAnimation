@@ -33,6 +33,9 @@ def gui(screen: ui.Surface):
     train_x = (SCREEN_WIDTH - train.length) / 2
     scroll = 0.0
     smoke = SmokeEmitter()
+
+    curve = Curve((50, 50), (300, 150), 10, 10, (255, 255, 255))
+
     while RUNNING:
         screen.fill(BACKGROUND)
         dt = clock.tick(60) / 1000.0
@@ -89,6 +92,8 @@ def gui(screen: ui.Surface):
         draw_rails(screen, RAIL_Y, scroll)
         smoke.draw(screen)
         train.draw(screen, train_x, 0)
+
+        curve.draw(screen)
         ui.display.flip()
 
         frame += 1

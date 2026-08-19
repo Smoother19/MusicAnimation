@@ -118,8 +118,9 @@ class Curve(TriangularShape):
         points = [(x, y)]
 
         for new_point in range(nb_points):
-            delt_x = x + (self.p_end[0] - x) * new_point
-            delt_y = y + (self.p_end[1] - y) * new_point
+            t = (new_point + 1) / (nb_points + 1) #get a number between 0 and 1
+            delt_x = x + (self.p_end[0] - x) * t
+            delt_y = y + (self.p_end[1] - y) * t
 
             offset_x = random.uniform(-variation, variation)
             offset_y = random.uniform(-variation, variation)
@@ -135,7 +136,7 @@ class Curve(TriangularShape):
         '''
         nb_segments = len(self.control_points) - 1 #there's more points than segment
         temp_pos = t * nb_segments
-        seg_id = int(temp_pos)
+        seg_id = min(int(temp_pos), nb_segments - 1)
         t_local = temp_pos - seg_id
 
         p_a = self.control_points[seg_id]
@@ -157,16 +158,26 @@ class Curve(TriangularShape):
         return points
 
     def list_triangles(self):
-        '''
-        dgbfgn
-        '''
         points = self.get_points()
         triangles = []
         hw = self.width / 2
 
         for i in range(len(points) - 1):
             p1 = points[i]
-            p2 = points[i+1]
+            p2 = points[i + 1]
+
+            angle = math.atan2(p2[1] - p1[1], p2[0] - p1[0])
+            perp = angle + math.pi / 2
+
+            a1 = (p1[0] + math.cos(perp) * hw, p1[1] + math.sin(perp) * hw)
+            a2 = (p1[0] - math.cos(perp) * hw, p1[1] - math.sin(perp) * hw)
+            b1 = (p2[0] + math.cos(perp) * hw, p2[1] + math.sin(perp) * hw)
+            b2 = (p2[0] - math.cos(perp) * hw, p2[1] - math.sin(perp) * hw)
+
+            triangles.append([a1, a2, b1])
+            triangles.append([a2, b2, b1])
+
+        return triangles
 
 
 class TrianglePoints(TriangularShape):
