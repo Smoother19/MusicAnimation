@@ -51,10 +51,8 @@ def gui(screen: ui.Surface):
                     params = Fireworks.get_random_params()
                     fw = Fireworks(*params)
                     fireworks.append(fw)
-
-                    
+       
         STATS["triangles"] = 0
-
         clouds_left = []
         #Test if the cloudas list is not empty
         if clouds:
@@ -81,7 +79,6 @@ def gui(screen: ui.Surface):
 
             fireworks = fireworks_left
 
-
         #Update clouds list
         clouds = clouds_left
         train.update(dt)
@@ -89,8 +86,6 @@ def gui(screen: ui.Surface):
         smoke.update(dt, sx, sy, wind=train.speed)
         scroll -= train.speed * dt
         
-
-        STATS["triangles"] = 0
         draw_rails(screen, RAIL_Y, scroll)
         smoke.draw(screen)
         train.draw(screen, train_x, 0)
@@ -108,7 +103,6 @@ def start_gui():
     ui.init()
     screen = ui.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     gui(screen)
-
 
 if __name__ == "__main__":
     start_gui()
