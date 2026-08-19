@@ -1,5 +1,7 @@
 import pygame as ui
+import random
 from shapes import *
+from cloud import Cloud
 from train import Train
 import random
 from smokeemitter import SmokeEmitter
@@ -20,6 +22,7 @@ def draw_shapes(screen, shapes):
         shape.draw(screen)
 
 def gui(screen: ui.Surface):
+    clouds = []
     RUNNING = True
     frame = 0
     clock = ui.time.Clock()
@@ -38,7 +41,23 @@ def gui(screen: ui.Surface):
                     train.accelerate(40)
                 elif event.key == ui.K_DOWN:
                     train.accelerate(-40)
+                elif event.key == ui.K_c:
+                    params = Cloud.get_random_param()
+                    clouds.append(Cloud(*params))
 
+        clouds_left = []
+        #Test if the cloudas list is not empty
+        if clouds:
+            for cloud in clouds:
+                cloud.draw(screen)
+                cloud.moving_cloud()
+
+                #Add to temp list the non valid clouds
+                if not cloud.is_out_of_screen(SCREEN_WIDTH):
+                    clouds_left.append(cloud)
+
+        #Update clouds list
+        clouds = clouds_left
         train.update(dt)
         sx, sy = train.smoke_position(train_x, 0)
         smoke.update(dt, sx, sy, wind=train.speed)

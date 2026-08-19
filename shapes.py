@@ -93,6 +93,50 @@ class Triangle(TriangularShape):
         triangle1 = [tl, tr, bl]
 
         return [triangle1]
+
+class TrianglePoints(TriangularShape):
+    '''
+    Create a triangle based on 3 points
+    '''
+    def __init__(self, a, b, c, width, height, color):
+        super().__init__(0, 0, width, height, color)
+        self.a = a
+        self.b = b
+        self.c = c
+
+    def list_triangles(self):
+        triangle1 = [self.a, self.b, self.c]
+        return [triangle1]
+
+    def getX(self):
+        return (self.a[0], self.b[0], self.c[0])
+
+    def setX(self, x_a, x_b, x_c):
+        self.a = (self.a[0] + x_a, self.a[1])
+        self.b = (self.b[0] + x_b, self.b[1])
+        self.c = (self.c[0] + x_c, self.c[1])
+
+class Group(TriangularShape):
+    'Permit to group shapes together and move them as a whole'
+ 
+    def __init__(self, x=0, y=0):
+        super().__init__(x, y, 0, 0, (0, 0, 0))
+        self.children = []
+ 
+    def add(self, *shapes):
+        self.children.extend(shapes)
+        return shapes[-1]
+ 
+    def list_triangles(self):
+        out = []
+        for child in self.children:
+            for tri in child.list_triangles():
+                out.append([(px + self.x, py + self.y) for (px, py) in tri])
+        return out
+ 
+    def draw(self, screen, ox=0, oy=0):
+        for child in self.children:
+            child.draw(screen, ox + self.x, oy + self.y)
     
 class Circle(TriangularShape):
     '''
