@@ -2,12 +2,8 @@ import pygame as ui
 from shapes import *
 from train import Train
 import random
-
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
-RAIL_Y = SCREEN_HEIGHT - 180
-SPEED = 100.0 
-BACKGROUND = (18, 18, 34)
+from smokeemitter import SmokeEmitter
+from config import *
 
 def draw_rails(screen, y, offset):
     ui.draw.polygon(screen, (52, 48, 44),
@@ -23,15 +19,15 @@ def draw_shapes(screen, shapes):
     for shape in shapes:
         shape.draw(screen)
 
-    
 def gui(screen: ui.Surface):
     RUNNING = True
     frame = 0
     clock = ui.time.Clock()
     train = Train(y=RAIL_Y, n_wagons=random.randint(2, 5))
     train.set_speed(SPEED, True)
-    train_x = (SCREEN_WIDTH - train.length) / 2   # le train reste centre
+    train_x = (SCREEN_WIDTH - train.length) / 2
     scroll = 0.0
+    smoke = SmokeEmitter()
     while RUNNING:
         dt = clock.tick(60) / 1000.0
         for event in ui.event.get():
@@ -44,11 +40,14 @@ def gui(screen: ui.Surface):
                     train.accelerate(-40)
 
         train.update(dt)
+        sx, sy = train.smoke_position(train_x, 0)
+        smoke.update(dt, sx, sy, wind=train.speed)
         scroll -= train.speed * dt
 
         STATS["triangles"] = 0
         screen.fill(BACKGROUND)
         draw_rails(screen, RAIL_Y, scroll)
+        smoke.draw(screen)
         train.draw(screen, train_x, 0)
         ui.display.flip()
 
