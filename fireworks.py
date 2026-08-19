@@ -2,6 +2,7 @@ import pygame
 import math
 import random
 from shapes import *
+from config import *
 
 class Fireworks(TriangularShape):
     '''
@@ -26,6 +27,11 @@ class Fireworks(TriangularShape):
             speed = random.uniform(min_speed, max_speed) #random speed of the ray
             self.rays.append((angle, speed))
 
+    def get_random_params():
+        x = random.randint(0, SCREEN_WIDTH)
+        y = random.randint(0, int(SCREEN_HEIGHT/2)) #to not have firework in the ground
+        color = ((random.randint(0, 255)),(random.randint(0, 255)),(random.randint(0, 255)))
+        return (x, y, color)
 
     def update(self, delta=1):
         '''

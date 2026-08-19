@@ -48,7 +48,8 @@ def gui(screen: ui.Surface):
                     params = Cloud.get_random_param()
                     clouds.append(Cloud(*params))
                 elif event.key == ui.K_f:
-                    fw = Fireworks(100, 100, (255, 0, 127), 5)
+                    params = Fireworks.get_random_params()
+                    fw = Fireworks(*params)
                     fireworks.append(fw)
 
         #Test if the cloudas list is not empty
