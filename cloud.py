@@ -3,7 +3,7 @@ import math
 import random
 from shapes import *
 
-class Cloud(TriangularShape):
+class Cloud(Group):
     '''
     This class will create clouds based on multiple triangles
 
@@ -25,6 +25,7 @@ class Cloud(TriangularShape):
 
     def __init__(self, radius, center, color, nb_points=100, 
                  irregularity=0.35, nb_harmonics=3, scale_x=1.3, scale_y=0.55, width=100, height=50):
+        super().__init__(0, 0)
         self.radius = radius
         self.center = center
         self.color = color
@@ -35,8 +36,10 @@ class Cloud(TriangularShape):
         self.scale_y = scale_y
         self.width = width
         self.height = height
-        self.points = self.generate_clouds_points()
-        self.list_triangle = self.points_to_triangle()
+
+        points = self.generate_clouds_points()
+        list_triangle = self.points_to_triangle(points)
+        self.add(*list_triangle)
 
 
     def get_random_param():
@@ -72,12 +75,12 @@ class Cloud(TriangularShape):
 
         return points
 
-    def points_to_triangle(self):
-        n = len(self.points)
+    def points_to_triangle(self, points):
+        n = len(points)
         triangles = []
         for i in range(n):
-            a = self.points[i]
-            b = self.points[(i + 1) % n]
+            a = points[i]
+            b = points[(i + 1) % n]
             triangles.append(TrianglePoints(self.center, a, b, self.width, self.height, self.color))
         return triangles
 
@@ -86,17 +89,9 @@ class Cloud(TriangularShape):
         return self.points_to_triangle(self.center, points, self.color, self.width, self.height)
 
     def moving_cloud(self, speed=1):
-        for triangle in self.list_triangle:
-            triangle.setX(speed, speed, speed)
+        self.x += speed
 
     def is_out_of_screen(self, screen_width):
-        for triangle in self.list_triangle:
-            for x in triangle.getX():
-                if x + self.width <= screen_width:
-                    return False
-
+        if self.x + self.width < screen_width:
+            return False
         return True
-
-    def draw(self, screen):
-        for triangle in self.list_triangle:
-            triangle.draw(screen)

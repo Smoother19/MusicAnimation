@@ -28,7 +28,6 @@ def gui(screen: ui.display):
                 RUNNING = False
             if event.type == ui.KEYDOWN:
                 if event.key == ui.K_c:
-                    print("test")
                     params = Cloud.get_random_param()
                     clouds.append(Cloud(*params))
 

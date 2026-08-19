@@ -29,13 +29,14 @@ class TriangularShape():
         '''
         return []
 
-    def draw(self, screen):
+    def draw(self, screen, ox=0, oy=0):
         '''
         Draw the shape on the screen
         '''
         triangles = self.list_triangles()
-        for triangle in triangles:
-            ui.draw.polygon(screen, self.color, triangle)
+        for i, triangle in enumerate(triangles):
+            pts = [(px + ox, py + oy) for (px, py) in triangle]
+            ui.draw.polygon(screen, "white", pts)
 
     def getX(self):
         '''
@@ -112,6 +113,28 @@ class TrianglePoints(TriangularShape):
         self.a = (self.a[0] + x_a, self.a[1])
         self.b = (self.b[0] + x_b, self.b[1])
         self.c = (self.c[0] + x_c, self.c[1])
+
+class Group(TriangularShape):
+    'Permit to group shapes together and move them as a whole'
+ 
+    def __init__(self, x=0, y=0):
+        super().__init__(x, y, 0, 0, (0, 0, 0))
+        self.children = []
+ 
+    def add(self, *shapes):
+        self.children.extend(shapes)
+        return shapes[-1]
+ 
+    def list_triangles(self):
+        out = []
+        for child in self.children:
+            for tri in child.list_triangles():
+                out.append([(px + self.x, py + self.y) for (px, py) in tri])
+        return out
+ 
+    def draw(self, screen, ox=0, oy=0):
+        for child in self.children:
+            child.draw(screen, ox + self.x, oy + self.y)
     
 class Circle(TriangularShape):
     '''
