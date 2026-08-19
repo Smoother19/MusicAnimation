@@ -198,28 +198,6 @@ class Trapezoid(TriangularShape):
         bl = (self.x - self.w_bottom / 2, self.y + self.height / 2)
         br = (self.x + self.w_bottom / 2, self.y + self.height / 2)
         return [[tl, tr, bl], [tr, br, bl]]
-
-class Group(TriangularShape):
-    'Permit to group shapes together and move them as a whole'
- 
-    def __init__(self, x=0, y=0):
-        super().__init__(x, y, 0, 0, (0, 0, 0))
-        self.children = []
- 
-    def add(self, *shapes):
-        self.children.extend(shapes)
-        return shapes[-1]
- 
-    def list_triangles(self):
-        out = []
-        for child in self.children:
-            for tri in child.list_triangles():
-                out.append([(px + self.x, py + self.y) for (px, py) in tri])
-        return out
- 
-    def draw(self, screen, ox=0, oy=0):
-        for child in self.children:
-            child.draw(screen, ox + self.x, oy + self.y)
  
 def _rgb(h, s, v):
     return tuple(int(255 * c) for c in colorsys.hsv_to_rgb(h % 1.0, s, v))

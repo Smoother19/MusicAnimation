@@ -44,17 +44,21 @@ def gui(screen: ui.Surface):
                 elif event.key == ui.K_c:
                     params = Cloud.get_random_param()
                     clouds.append(Cloud(*params))
+                    
+        STATS["triangles"] = 0
 
+        screen.fill(BACKGROUND)
         clouds_left = []
         #Test if the cloudas list is not empty
         if clouds:
             for cloud in clouds:
                 cloud.draw(screen)
                 cloud.moving_cloud()
-
+                
                 #Add to temp list the non valid clouds
                 if not cloud.is_out_of_screen(SCREEN_WIDTH):
                     clouds_left.append(cloud)
+
 
         #Update clouds list
         clouds = clouds_left
@@ -62,9 +66,10 @@ def gui(screen: ui.Surface):
         sx, sy = train.smoke_position(train_x, 0)
         smoke.update(dt, sx, sy, wind=train.speed)
         scroll -= train.speed * dt
+        
 
-        STATS["triangles"] = 0
-        screen.fill(BACKGROUND)
+        
+        
         draw_rails(screen, RAIL_Y, scroll)
         smoke.draw(screen)
         train.draw(screen, train_x, 0)
