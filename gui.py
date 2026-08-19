@@ -2,6 +2,7 @@ import pygame as ui
 import random
 from shapes import *
 from cloud import Cloud
+from fireworks import Fireworks
 from train import Train
 import random
 from smokeemitter import SmokeEmitter
@@ -23,6 +24,7 @@ def draw_shapes(screen, shapes):
 
 def gui(screen: ui.Surface):
     clouds = []
+    fireworks = []
     RUNNING = True
     frame = 0
     clock = ui.time.Clock()
@@ -32,6 +34,7 @@ def gui(screen: ui.Surface):
     scroll = 0.0
     smoke = SmokeEmitter()
     while RUNNING:
+        screen.fill(BACKGROUND)
         dt = clock.tick(60) / 1000.0
         for event in ui.event.get():
             if event.type == ui.QUIT:
@@ -44,13 +47,18 @@ def gui(screen: ui.Surface):
                 elif event.key == ui.K_c:
                     params = Cloud.get_random_param()
                     clouds.append(Cloud(*params))
+                elif event.key == ui.K_f:
+                    params = Fireworks.get_random_params()
+                    fw = Fireworks(*params)
+                    fireworks.append(fw)
+
                     
         STATS["triangles"] = 0
 
-        screen.fill(BACKGROUND)
         clouds_left = []
         #Test if the cloudas list is not empty
         if clouds:
+            clouds_left = []
             for cloud in clouds:
                 cloud.draw(screen)
                 cloud.moving_cloud()
@@ -58,6 +66,20 @@ def gui(screen: ui.Surface):
                 #Add to temp list the non valid clouds
                 if not cloud.is_out_of_screen(SCREEN_WIDTH):
                     clouds_left.append(cloud)
+            
+            #Update clouds list 
+            clouds = clouds_left
+        
+        if fireworks:
+            fireworks_left = []
+            for fw in fireworks:
+                fw.draw(screen)
+                fw.update()
+
+                if not fw.is_done():
+                    fireworks_left.append(fw)
+
+            fireworks = fireworks_left
 
 
         #Update clouds list
@@ -68,8 +90,7 @@ def gui(screen: ui.Surface):
         scroll -= train.speed * dt
         
 
-        
-        
+        STATS["triangles"] = 0
         draw_rails(screen, RAIL_Y, scroll)
         smoke.draw(screen)
         train.draw(screen, train_x, 0)
