@@ -125,7 +125,6 @@ class Curve(TriangularShape):
         return self.a * math.pow(x, 3) + self.b * x + self.c
 
     def point_at(self, t):
-        print(self.rand)
         x = self.p_start[0] + (self.p_end[0] - self.p_start[0]) * t 
 
         x_norm = -1 + 2 * t     #norm it to be used in function
