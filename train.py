@@ -1,6 +1,7 @@
 import math
 import random
 from shapes import *
+import pygame as ui
 class Wheel(TriangularShape):
     def __init__(self, x, y, radius, color, spoke_color, spokes=6):
         super().__init__(x, y, radius * 2, radius * 2, color)
@@ -42,8 +43,6 @@ class Wheel(TriangularShape):
                 for i in range(n)]
 
     def draw(self, screen, ox=0, oy=0):
-        import pygame as ui
-        from shapes import STATS, facet
         for group, color in ((self.list_triangles(), self.color),
                              (self.spoke_triangles(), self.spoke_color),
                              (self.hub_triangles(), self.color)):
@@ -58,7 +57,10 @@ class Train(Group):
     CHASSIS_H = 7
     GAP = 14            # espace entre deux vehicules
     BOB_AMPLITUDE = 1.2  # oscillation verticale de la caisse
-    MAX_ACCEL = 220.0
+    MAX_SPEED = 220.0
+    LEAN_DAMPING = 1.0
+    LEAN_MAX = 500.0
+    LEAN_STRENGTH = 1.0
 
     def __init__(self, seed=None, n_wagons=None, x=0, y=0):
         super().__init__(x, y)
@@ -67,30 +69,32 @@ class Train(Group):
         self.pal = make_palette(self.rng)
         self.wheels = []
         self.length = 0
+        self._base_x = x
         self._base_y = y
+        self._lean = 0.0
         self._time = 0.0
-        self._build(n_wagons)
         self.speed = 0.0
         self.target_speed = 0.0
         self.distance = 0.0
+        self._build(n_wagons)
 
     def set_speed(self, value, instant=False):
-            '''speed in pixels/second
-            Attribute:
-                value (float): new target speed
-                instant (bool): if True, sets the speed immediately
-            '''
-            self.target_speed = max(0.0, value)
-            if instant:
-                self.speed = self.target_speed
-            return self
+        '''speed in pixels/second
+        Attribute:
+            value (float): new target speed
+            instant (bool): if True, sets the speed immediately
+        '''
+        self.target_speed = max(0.0, value)
+        if instant:
+            self.speed = self.target_speed
+        return self
     
     def accelerate(self, delta):
         '''Add delta to the target speed, and return self.'''
         return self.set_speed(self.target_speed + delta)
     
     def stop(self, instant=False):
-        return self.set_speed(0.0, instant)
+        return self.set_speed(0.0, instant)      
 
     # generation train + wagon
     def _build(self, n_wagons):
@@ -121,7 +125,6 @@ class Train(Group):
         self.length = cursor - self.GAP
 
     def regenerate(self, seed=None, n_wagons=None):
-        """Reconstruit le train en place, avec un nouveau seed."""
         self.children.clear()
         self.wheels.clear()
         self.seed = random.randrange(10 ** 6) if seed is None else seed
@@ -132,15 +135,22 @@ class Train(Group):
 
     # animation
 
-    def update(self, dt, speed=None):
+    def update(self, dt, speed=None, k=LEAN_DAMPING):
         if speed is not None:
             self.set_speed(speed)
 
         # acceleration bornee
         diff = self.target_speed - self.speed
-        step = self.MAX_ACCEL * dt
-        self.speed += max(-step, min(step, diff))
+        step = self.MAX_SPEED * dt
+        temp = max(-step, min(step, diff))
+        accel = temp / dt
+        self.speed += temp
         self.distance += self.speed * dt
+
+        self._lean -= accel * self.LEAN_STRENGTH * dt
+        self._lean *= (1 - self.LEAN_DAMPING * dt)
+        self._lean = min(self.LEAN_MAX, max(-self.LEAN_MAX, self._lean))
+        self.x = self._base_x + self._lean
 
         for wheel in self.wheels:
             wheel.angle -= self.speed * dt / max(1, wheel.radius)
