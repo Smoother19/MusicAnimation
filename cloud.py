@@ -18,7 +18,7 @@ class Cloud(Group):
     
         Methods:
             generate_clouds_points(): create list of differents points to be used to create triangle
-            points_to_triangle(center, points, color, width, height): Create the triangle based on the points
+            list_triangles(center, points, color, width, height): Create the triangle based on the points
             generate_cloud(center, radius, color, nb_points=14, width=100, height=50): Drw the shape of the cloud
             def moving_cloud(cloud, speed=1): Generate a little animation of movment to the
     '''
@@ -38,7 +38,7 @@ class Cloud(Group):
         self.height = height
 
         points = self.generate_clouds_points()
-        list_triangle = self.points_to_triangle(points)
+        list_triangle = self.list_triangles(points)
         self.add(*list_triangle)
 
 
@@ -76,7 +76,7 @@ class Cloud(Group):
 
         return points
 
-    def points_to_triangle(self, points):
+    def list_triangles(self, points):
         n = len(points)
         triangles = []
         for i in range(n):
@@ -88,7 +88,7 @@ class Cloud(Group):
 
     def generate_cloud(self):
         points = self.generate_clouds_points(self.radius, self.center, self.nb_points)
-        return self.points_to_triangle(self.center, points, self.color, self.width, self.height)
+        return self.list_triangles(self.center, points, self.color, self.width, self.height)
 
     def moving_cloud(self, speed=1):
         self.x += speed

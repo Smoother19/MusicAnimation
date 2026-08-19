@@ -52,13 +52,17 @@ def gui(screen: ui.Surface):
                     fw = Fireworks(*params)
                     fireworks.append(fw)
 
+                    
+        STATS["triangles"] = 0
+
+        clouds_left = []
         #Test if the cloudas list is not empty
         if clouds:
             clouds_left = []
             for cloud in clouds:
                 cloud.draw(screen)
                 cloud.moving_cloud()
-
+                
                 #Add to temp list the non valid clouds
                 if not cloud.is_out_of_screen(SCREEN_WIDTH):
                     clouds_left.append(cloud)
@@ -77,10 +81,14 @@ def gui(screen: ui.Surface):
 
             fireworks = fireworks_left
 
+
+        #Update clouds list
+        clouds = clouds_left
         train.update(dt)
         sx, sy = train.smoke_position(train_x, 0)
         smoke.update(dt, sx, sy, wind=train.speed)
         scroll -= train.speed * dt
+        
 
         STATS["triangles"] = 0
         draw_rails(screen, RAIL_Y, scroll)
