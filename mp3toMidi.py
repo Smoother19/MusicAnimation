@@ -14,7 +14,7 @@ D = lr.stft(audio)
 print(D)
 plt.imshow(np.abs(D))
 plt.show()
-D_harmonic16, D_percussive16 = librosa.decompose.hpss(D, margin=16)
+D_harmonic16, D_percussive16 = lr.decompose.hpss(D, margin=16)
 
 
 
@@ -60,7 +60,7 @@ instruments = [
 for low, high, name in instruments :
     f0 = lr.yin(y=audio, sr=sample_rate, fmin=low, fmax=high)
     S = np.abs(lr.stft(audio))
-    C = librosa.cqt(y=audio, sr=sample_rate)
+    C = lr.cqt(y=audio, sr=sample_rate)
     
 
     # Reconstruction audio
