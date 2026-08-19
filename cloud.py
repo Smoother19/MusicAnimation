@@ -23,7 +23,7 @@ class Cloud(Group):
             def moving_cloud(cloud, speed=1): Generate a little animation of movment to the
     '''
 
-    def __init__(self, radius, center, color, nb_points=100, 
+    def __init__(self, radius, center, color, nb_points=20, 
                  irregularity=0.35, nb_harmonics=3, scale_x=1.3, scale_y=0.55, width=100, height=50):
         super().__init__(0, 0)
         self.radius = radius
@@ -47,7 +47,8 @@ class Cloud(Group):
         center = (random.randint(50, 250), random.randint(50, 250))
         color = (255, 255, 255)
         harmonics = random.randint(3, 10)
-        return (rad, center, color, 100, 0.35, harmonics)
+        nb_point = random.randint(5, 100)
+        return (rad, center, color, nb_point, 0.35, harmonics)
 
     def generate_clouds_points(self):
         cx, cy = self.center
