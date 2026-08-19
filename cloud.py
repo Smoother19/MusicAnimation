@@ -47,7 +47,7 @@ class Cloud(Group):
         center = (random.randint(50, 250), random.randint(50, 250))
         color = (255, 255, 255)
         harmonics = random.randint(3, 10)
-        nb_point = random.randint(5, 20)
+        nb_point = random.randint(5, 100)
         return (rad, center, color, nb_point, 0.35, harmonics)
 
     def generate_clouds_points(self):
