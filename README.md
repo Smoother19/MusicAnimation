@@ -14,7 +14,7 @@ pip install -e .        # ou : uv sync
 
 ## Utilisation
 1. Place un fichier MP3 dans `sounds/`
-2. Inscrire le nom du fichier dans `mp3toMidi.py` afin de pointer sur le bon fichier 
+2. Inscrire le nom du fichier dans `main.py` afin de pointer sur le bon fichier 
 3. Lance `main.py`
 
 ## Structure

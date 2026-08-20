@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import *
 from pathlib import Path
+from shutil import copy as cp
 
 HOP = 256   # temps entre 2 frames
 BPO = 36    # bins/octave => 3 bins/demi-tons
@@ -11,12 +12,17 @@ K = 8       # nbr harmonique
 N_BINS = 228    # hauteur totale
 GEOMETRIC = True    # False → somme arithmétique, pour comparer
 SEUIL = 0.2
+music_dir = Path("sounds")
+output_dir = Path("output")
 
 def decode(filename:str):
-    # chargement + stft/cqt
-    music_dir = Path("sounds")
-    output_dir = Path("output")
+    filetype = Path(filename).suffix
+    if ".mid" in filetype :
+        cp(music_dir / filename, output_dir / "transcription.mid")
+        print("The input file is already a Midi file !")
+        return
 
+    # chargement + stft/cqt
     y, sr = librosa.load(music_dir / filename,sr=None)
 
     tuning = librosa.estimate_tuning(y=y, sr=sr)
