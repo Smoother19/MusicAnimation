@@ -7,6 +7,8 @@ from train import Train
 import random
 from smokeemitter import SmokeEmitter
 from config import *
+from pathlib import Path
+import os
 
 def draw_rails(screen, y, offset):
     ui.draw.polygon(screen, (52, 48, 44),
@@ -99,10 +101,25 @@ def gui(screen: ui.Surface):
 
     ui.quit()
 
-def start_gui():
+def start_gui(isMidi:bool):
+    file_dir = Path("output")
+    filename = "bg.mp3"
+    if isMidi :
+        filename = "transcription.mid"
     ui.init()
     screen = ui.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    ui.mixer.music.load(file_dir / filename)
+    ui.mixer.music.play()
     gui(screen)
+    try:
+        if isMidi:
+            os.remove(file_dir / filename)
+        else:
+            os.remove(file_dir / filename)
+            os.remove(file_dir / "transcription.mid")
+    except Exception as e:
+        print("Output folder is empty")
+    
 
 if __name__ == "__main__":
     start_gui()

@@ -20,7 +20,7 @@ def decode(filename:str):
     if ".mid" in filetype :
         cp(music_dir / filename, output_dir / "transcription.mid")
         print("The input file is already a Midi file !")
-        return
+        return True
 
     # chargement + stft/cqt
     y, sr = librosa.load(music_dir / filename,sr=None)
@@ -161,6 +161,7 @@ def decode(filename:str):
 
     pm.instruments.append(inst)
     pm.write(output_dir / "transcription.mid")
+    cp(music_dir / filename, output_dir / "bg.mp3")
     print("MIDI écrit :", len(inst.notes), "notes")
 
 

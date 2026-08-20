@@ -3,13 +3,11 @@ import librosa as lr
 from pathlib import Path
 import numpy as np
 
-file_dir = Path("output")
-filename = "transcription.mid"
-midi_data = pm.PrettyMIDI(file_dir / filename)
-
-
-
 def decode():
+    file_dir = Path("output")
+    filename = "transcription.mid"
+    midi_data = pm.PrettyMIDI(file_dir / filename)
+
     print("\nStarting to decode midi file...")
 
     beats = midi_data.get_beats()
