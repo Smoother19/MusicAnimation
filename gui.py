@@ -9,6 +9,8 @@ from smokeemitter import SmokeEmitter
 from config import *
 from pathlib import Path
 import os
+from sync import SyncMusic
+from midiDecoder import decode
 
 def draw_rails(screen, y, offset):
     ui.draw.polygon(screen, (52, 48, 44),
@@ -24,7 +26,7 @@ def draw_shapes(screen, shapes):
     for shape in shapes:
         shape.draw(screen)
 
-def gui(screen: ui.Surface):
+def gui(screen: ui.Surface, sync):
     clouds = []
     fireworks = []
     RUNNING = True
@@ -53,6 +55,14 @@ def gui(screen: ui.Surface):
                     params = Fireworks.get_random_params()
                     fw = Fireworks(*params)
                     fireworks.append(fw)
+
+        t = ui.mixer.music.get_pos() / 1000.0
+        if t >= 0:
+            for note in sync.update(t):
+                if note["pitch"] < 55:                    # graves
+                    fireworks.append(Fireworks(*Fireworks.get_random_params()))
+                elif note["pitch"] > 75:                  # aigus
+                    clouds.append(Cloud(*Cloud.get_random_param()))
        
         STATS["triangles"] = 0
         clouds_left = []
@@ -101,25 +111,33 @@ def gui(screen: ui.Surface):
 
     ui.quit()
 
-def start_gui(isMidi:bool):
+def start_gui(isMidi: bool = False):
     file_dir = Path("output")
-    filename = "bg.mp3"
-    if isMidi :
-        filename = "transcription.mid"
+    filename = "transcription.mid" if isMidi else "bg.mp3"
+
+    ui.mixer.pre_init(44100, -16, 2, 512)
     ui.init()
+    if not ui.mixer.get_init():
+        ui.mixer.init()
     screen = ui.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    arr, bpm = decode()
+    sync = SyncMusic(arr)
+    print(f"{len(sync.notes)} notes chargees")
+
     ui.mixer.music.load(file_dir / filename)
     ui.mixer.music.play()
-    gui(screen)
+
+    gui(screen, sync)
+
+    ui.mixer.music.unload()
     try:
-        if isMidi:
-            os.remove(file_dir / filename)
-        else:
-            os.remove(file_dir / filename)
+        os.remove(file_dir / filename)
+        if not isMidi:
             os.remove(file_dir / "transcription.mid")
-    except Exception as e:
-        print("Output folder is empty")
-    
+    except OSError as e:
+        print(f"Suppression impossible : {e}")
+
 
 if __name__ == "__main__":
     start_gui()

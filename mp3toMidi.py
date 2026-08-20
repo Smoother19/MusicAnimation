@@ -29,7 +29,7 @@ def decode(filename:str):
     if tuning == None :
         tuning = 0.0
 
-    fmin = librosa.note_to_hz("G2")
+    fmin = librosa.note_to_hz("C2")
 
     S_stft = librosa.stft(y, hop_length=HOP)
     C_cqt = librosa.cqt(y, sr=sr, hop_length=HOP, fmin=fmin, bins_per_octave=BPO, n_bins=N_BINS, tuning=tuning)
