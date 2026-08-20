@@ -2,54 +2,6 @@ import math
 import random
 from shapes import *
 import pygame as ui
-class Wheel(TriangularShape):
-    def __init__(self, x, y, radius, color, spoke_color, spokes=6):
-        super().__init__(x, y, radius * 2, radius * 2, color)
-        self.radius = radius
-        self.spoke_color = spoke_color
-        self.spokes = spokes
-        self.angle = 0.0
-
-    def list_triangles(self):
-        tris = []
-        # jante
-        n = 12
-        for i in range(n):
-            a1 = 2 * math.pi * i / n
-            a2 = 2 * math.pi * (i + 1) / n
-            tris.append([(self.x, self.y),
-                         (self.x + self.radius * math.cos(a1), self.y + self.radius * math.sin(a1)),
-                         (self.x + self.radius * math.cos(a2), self.y + self.radius * math.sin(a2))])
-        return tris
-
-    def spoke_triangles(self):
-        tris = []
-        w = 0.13
-        r = self.radius * 0.82
-        for i in range(self.spokes):
-            a = self.angle + 2 * math.pi * i / self.spokes
-            tris.append([(self.x, self.y),
-                         (self.x + r * math.cos(a - w), self.y + r * math.sin(a - w)),
-                         (self.x + r * math.cos(a + w), self.y + r * math.sin(a + w))])
-        return tris
-
-    def hub_triangles(self):
-        n, r = 6, self.radius * 0.30
-        return [[(self.x, self.y),
-                 (self.x + r * math.cos(2 * math.pi * i / n),
-                  self.y + r * math.sin(2 * math.pi * i / n)),
-                 (self.x + r * math.cos(2 * math.pi * (i + 1) / n),
-                  self.y + r * math.sin(2 * math.pi * (i + 1) / n))]
-                for i in range(n)]
-
-    def draw(self, screen, ox=0, oy=0):
-        for group, color in ((self.list_triangles(), self.color),
-                             (self.spoke_triangles(), self.spoke_color),
-                             (self.hub_triangles(), self.color)):
-            STATS["triangles"] += len(group)
-            for i, t in enumerate(group):
-                ui.draw.polygon(screen, facet(color, i), [(px + ox, py + oy) for px, py in t])
-
 
 class Train(Group):
 
