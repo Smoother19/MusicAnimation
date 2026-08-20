@@ -2,6 +2,7 @@ import librosa
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import *
+from pathlib import Path
 
 HOP = 256   # temps entre 2 frames
 BPO = 36    # bins/octave => 3 bins/demi-tons
@@ -12,7 +13,8 @@ SEUIL = 0.2
 
 
 # chargement + stft/cqt
-y, sr = librosa.load(".\\sounds\\Ecossaise_Trumpet.mp3")
+music_dir = Path("sounds")
+y, sr = librosa.load(music_dir / "Ecossaise_Trumpet.mp3")
 tuning = librosa.estimate_tuning(y=y, sr=sr)
 fmin = librosa.note_to_hz("G2")
 
