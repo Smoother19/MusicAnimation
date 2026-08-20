@@ -134,7 +134,6 @@ def start_gui(isMidi: bool = False):
 
     gui(screen, sync)
 
-    ui.mixer.music.unload()
     try:
         os.remove(file_dir / filename)
         if not isMidi:
