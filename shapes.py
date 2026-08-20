@@ -117,7 +117,7 @@ class Curve(TriangularShape):
     def get_random_params():
         type_curve = 1
         a = random.uniform(0, 3)
-        b = random.uniform(0, 3)
+        b = random.uniform(0, 2)
         c = random.uniform(0, 3)
         return (type_curve, a, b, c)
 
@@ -221,7 +221,7 @@ class CurvesTrack():
         end_y = self.y_base
 
         type_curve, a, b, c = Curve.get_random_params()
-        chunk = Curve((start_x, start_y), (end_x, end_y), 5, (52, 48, 44), type_curve, a, b, c, amplitude=self.amplitude)
+        chunk = Curve((start_x, start_y), (end_x, end_y), 8, (52, 48, 44), type_curve, a, b, c, amplitude=self.amplitude)
         return chunk, end_y
 
     def update(self, dt):

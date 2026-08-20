@@ -34,8 +34,7 @@ def gui(screen: ui.Surface):
     scroll = 0.0
     smoke = SmokeEmitter()
 
-    curve = Curve((0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), type_curve=1,width=10, color=(52, 48, 44), a=1, b=5, c=1)
-    curveTrack = CurvesTrack(100, 100, 10, 100)
+    curveTrack = CurvesTrack(RAIL_Y, amplitude=25, speed=100)
 
     while RUNNING:
         screen.fill(BACKGROUND)
@@ -95,7 +94,6 @@ def gui(screen: ui.Surface):
         smoke.draw(screen)
         train.draw(screen, train_x, 0)
 
-        curve.draw(screen)
         curveTrack.draw(screen)
         ui.display.flip()
 
