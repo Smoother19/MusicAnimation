@@ -34,7 +34,8 @@ def gui(screen: ui.Surface):
     scroll = 0.0
     smoke = SmokeEmitter()
 
-    curve = Curve((100, 100), (800, 500), width=10, color=(255, 255, 255), a=-3, b=2, c=2)
+    curve = Curve((0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT), type_curve=1,width=10, color=(52, 48, 44), a=1, b=5, c=1)
+    curveTrack = CurvesTrack(100, 100, 10, 100)
 
     while RUNNING:
         screen.fill(BACKGROUND)
@@ -84,6 +85,7 @@ def gui(screen: ui.Surface):
 
         #Update clouds list
         clouds = clouds_left
+        curveTrack.update(dt)
         train.update(dt)
         sx, sy = train.smoke_position(train_x, 0)
         smoke.update(dt, sx, sy, wind=train.speed)
@@ -94,6 +96,7 @@ def gui(screen: ui.Surface):
         train.draw(screen, train_x, 0)
 
         curve.draw(screen)
+        curveTrack.draw(screen)
         ui.display.flip()
 
         frame += 1

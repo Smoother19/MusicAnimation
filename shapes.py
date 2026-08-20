@@ -2,6 +2,7 @@ import colorsys
 import pygame as ui
 import math
 import random
+from config import *
 
 FACET_STRENGTH = 0.12     # 0 = uniforme | 0.06 = leger relief | 0.25 = debug
 
@@ -101,7 +102,7 @@ class Curve(TriangularShape):
     the curve is based on a function that is draw
     '''
 
-    def __init__(self, start, end, width, color, a = 1.0, b = 0.0, c = 0.0, height= 0, amplitude=100, resolution=50):
+    def __init__(self, start, end, width, color, type_curve=-1, a = 1.0, b = 0.0, c = 0.0, height= 0, amplitude=100, resolution=50):
         super().__init__(start[0], start[1], width, height, color)
         self.p_start = start
         self.p_end = end
@@ -110,7 +111,15 @@ class Curve(TriangularShape):
         self.a = a
         self.b = b 
         self.c = c
+        self.type_curve = type_curve
         self.rand = random.randint(0, 100)
+
+    def get_random_params():
+        type_curve = 1
+        a = random.uniform(0, 3)
+        b = random.uniform(0, 3)
+        c = random.uniform(0, 3)
+        return (type_curve, a, b, c)
 
     def parabola(self, x):
         return self.a * math.pow(x, 2) + self.b * x + self.c
@@ -126,20 +135,29 @@ class Curve(TriangularShape):
 
     def point_at(self, t):
         x = self.p_start[0] + (self.p_end[0] - self.p_start[0]) * t 
-
         x_norm = -1 + 2 * t     #norm it to be used in function
-        if self.rand <= 25:
-            y_shape = self.parabola(x_norm)
-        elif self.rand <= 50:
-            y_shape = self.sinus(x_norm)
-        elif self.rand <= 75:
-            y_shape = self.cosinus(x_norm)
-        else:
-            y_shape = self.cubic(x_norm)
 
-        y = self.p_start[1] + (self.p_end[1] - self.p_start[1]) * t + y_shape * self.amplitude
+        y_shape = self.get_y_shape(x_norm)
+        y_shape_start = self.get_y_shape(-1)
+
+        y = self.p_start[1] + (self.p_end[1] - self.p_start[1]) * t + (y_shape - y_shape_start) * self.amplitude
 
         return (x, y)
+
+    def get_y_shape(self, x_norm):
+        #it will not be the same because the x isn't the same, it stays between -1 and 1
+        if self.type_curve == -1:
+            if self.rand <= 25:
+                return self.parabola(x_norm)
+            elif self.rand <= 50:
+                return self.sinus(x_norm)
+            elif self.rand <= 75:
+                return self.cosinus(x_norm)
+            else:
+                return self.cubic(x_norm)
+        elif self.type_curve == 1:
+            return self.sinus(x_norm)
+
 
     def get_points(self):
         '''
@@ -173,6 +191,61 @@ class Curve(TriangularShape):
             triangles.append([a2, b2, b1])
 
         return triangles
+
+class CurvesTrack():
+    def __init__(self, y_base, chunk_length=400, amplitude=100, speed=100):
+        '''
+        Create a track of multiple curves
+        '''
+        self.y_base = y_base
+        self.chunk_length = chunk_length
+        self.amplitude = amplitude
+        self.speed = speed
+        self.scroll = 0.0
+        self.chunks = []
+
+        x = 0
+        last_y = y_base
+        while x < SCREEN_WIDTH + chunk_length:
+            chunk, _ = self.make_chunk(x, last_y)
+            self.chunks.append(chunk)
+            real_end = chunk.point_at(1.0)
+            x = real_end[0]
+            last_y = real_end[1]
+
+    def make_chunk(self, start_x, start_y):
+        '''
+        Create new chunk to be added on the screen
+        '''
+        end_x = start_x + self.chunk_length
+        end_y = self.y_base
+
+        type_curve, a, b, c = Curve.get_random_params()
+        chunk = Curve((start_x, start_y), (end_x, end_y), 5, (52, 48, 44), type_curve, a, b, c, amplitude=self.amplitude)
+        return chunk, end_y
+
+    def update(self, dt):
+        self.scroll -= self.speed * dt
+
+        #get the first "curve"'s x position (with the scroll)
+        first_chunk = self.chunks[0].p_end[0] + self.scroll
+        if first_chunk < 0:
+            self.chunks.pop(0)
+            last_chunk = self.chunks[-1]
+
+            real_end = last_chunk.point_at(1.0)
+
+            new_chunk, _ = self.make_chunk(real_end[0], real_end[1])
+            self.chunks.append(new_chunk)
+
+    def draw(self, screen):
+        for chunk in self.chunks:
+            chunk.draw(screen, ox=self.scroll, oy=0)
+
+        for chunk in self.chunks:
+            joint = chunk.point_at(1.0)
+            patch = Circle(joint[0] + self.scroll, joint[1], chunk.width /2, chunk.color, 10)
+            patch.draw(screen)
 
 
 class TrianglePoints(TriangularShape):
