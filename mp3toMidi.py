@@ -1,4 +1,5 @@
 import librosa
+import pretty_midi
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import *
@@ -14,8 +15,12 @@ SEUIL = 0.2
 
 # chargement + stft/cqt
 music_dir = Path("sounds")
-y, sr = librosa.load(music_dir / "Ecossaise_Trumpet.mp3")
+y, sr = librosa.load(music_dir / "PinkPanther_Piano_Only.mp3",sr=None)
+
 tuning = librosa.estimate_tuning(y=y, sr=sr)
+if tuning == None :
+    tuning = 0.0
+
 fmin = librosa.note_to_hz("G2")
 
 S_stft = librosa.stft(y, hop_length=HOP)
@@ -30,11 +35,20 @@ onset_env = np.mean(diffS, axis=0)  # agregation
 
 onset_frames = librosa.onset.onset_detect(onset_envelope=onset_env,
                                           sr=sr, hop_length=HOP)    # detection de pic
+
+if len(onset_frames) == 0:
+    onset_frames = np.array([0])
+
 onset_times = librosa.frames_to_time(onset_frames, sr=sr, hop_length=HOP)
 
 tempo, beats = librosa.beat.beat_track(onset_envelope=onset_env,
                                        sr=sr, hop_length=HOP)   # tempo
 tempo = float(np.atleast_1d(tempo)[0])
+
+beats = np.atleast_1d(beats)
+if len(beats) == 0:
+    beats = np.array([0])
+
 beat_times = librosa.frames_to_time(beats, sr=sr, hop_length=HOP)
 
 
@@ -43,7 +57,7 @@ def whiten(C, size=48, floor_ratio=0.01):
     p = uniform_filter1d(C.astype(np.float64) ** 2, size=size,
                          axis=0, mode="nearest")
     local = np.sqrt(np.maximum(p, 0.0))
-    return C / np.maximum(local, floor_ratio * local.max())
+    return C / np.maximum(local, floor_ratio * local.max() + 1e-10)
 
 C_white = whiten(C_lin)
 
@@ -67,6 +81,7 @@ def salience(C):
 t_ref = librosa.time_to_frames(20.0, sr=sr, hop_length=HOP)
 print("contrôle:", cands[np.argmax(salience(C_white[:, t_ref]))])
 
+t_ref = min(t_ref, C_white.shape[1] - 1)
 S_sal = salience(C_white)
 
 # plt.plot(cands, salience(C_white[:, t_ref]), label="arrondi")
@@ -103,7 +118,6 @@ for i in range(len(frames) - 1):
     force = S_sal[:, a:b].max(axis=0).mean()
     notes.append((a, b, bin_note, force))
 
-forces = np.array([n[3] for n in notes])
 
 midi_note = librosa.hz_to_midi(fmin * 2.0 ** (bin_note / BPO))
 midi_note = int(np.round(midi_note))
@@ -112,7 +126,6 @@ midi_note = int(np.round(midi_note))
 notes = [n for n in notes if n[3] >= SEUIL]
 print(len(notes), "notes retenues")
 
-import pretty_midi
 
 # quantification sur la grille de temps
 sub = 60.0 / tempo / 4          # durée d'une double-croche
@@ -125,7 +138,9 @@ def snap(t):
 pm = pretty_midi.PrettyMIDI(initial_tempo=tempo)
 inst = pretty_midi.Instrument(program=56)      # 56 = Trumpet
 
+forces = np.array([n[3] for n in notes])
 f_max = forces.max()
+
 for a, b, bin_note, force in notes:
     pitch = int(round(librosa.hz_to_midi(fmin * 2.0 ** (bin_note / BPO))))
     velocity = int(np.clip(40 + 87 * (force / f_max) ** 3, 1, 127))
