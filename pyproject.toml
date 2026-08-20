@@ -9,8 +9,10 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "librosa>=1.0.0",
+    "matplotlib>=3.11.1",
     "midiutil>=1.2.1",
     "numpy>=2.5.2",
+    "pretty-midi>=0.2.11.post0",
     "pygame>=2.6.1",
 ]
 
