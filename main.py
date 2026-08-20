@@ -2,7 +2,7 @@ import mp3toMidi
 import gui
 import midiDecoder
 
-inputfile = "Ecossaise_Piano.mp3"
+inputfile = "Ecossaise_Both.mp3"
 
 def main() :
     isMidi = mp3toMidi.decode(inputfile)

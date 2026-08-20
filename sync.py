@@ -1,4 +1,5 @@
 import math
+import statistics
 
 
 class SyncMusic():
@@ -10,6 +11,7 @@ class SyncMusic():
         self.music = music
         self.notes = self.get_notes()
         self.cursor = 0
+        self.build_density()
 
     def get_notes(self):
         notes = []
@@ -37,3 +39,38 @@ class SyncMusic():
         self.cursor = 0
         while self.cursor < len(self.notes) and self.notes[self.cursor]["start"] < t:
             self.cursor += 1
+
+    def build_density(self, window=2.0):
+        self.window = window
+        if not self.notes:
+            self.counts = [0]
+            self.ref_count = 1.0
+            return
+ 
+        end = max(n["end"] for n in self.notes)
+        self.counts = [0] * (int(end / window) + 2)
+        for n in self.notes:
+            self.counts[int(n["start"] / window)] += 1
+ 
+        active = [c for c in self.counts if c > 0]
+        self.ref_count = float(statistics.median(active)) if active else 1.0
+ 
+    def density(self, t):
+        i = int(t / self.window)
+        return self.counts[i] if 0 <= i < len(self.counts) else 0
+ 
+    def density_ratio(self, t):
+        i = int(t / self.window)
+        if i <= 0 or i >= len(self.counts):
+            return 1.0
+        prev = self.counts[i - 1]
+        return self.counts[i] / prev if prev else 1.0
+ 
+    def speed_factor(self, t, lo=0.75, hi=1.35, dead=0.20):
+        d = self.density(t)
+        if self.ref_count <= 0:
+            return 1.0
+        r = d / self.ref_count
+        if abs(r - 1.0) < dead:
+            return 1.0
+        return max(lo, min(hi, r))
