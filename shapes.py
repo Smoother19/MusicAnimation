@@ -1,6 +1,19 @@
+import colorsys
 import pygame as ui
 import math
+import random
 
+FACET_STRENGTH = 0.12     # 0 = uniforme | 0.06 = leger relief | 0.25 = debug
+
+def facet(color, i):
+    if FACET_STRENGTH <= 0:
+        return color
+    return shade(color, 1.0 + FACET_STRENGTH * (2 * ((i * 0.5) % 1.0) - 1))
+
+def shade(color, k):
+    return tuple(max(0, min(255, int(c * k))) for c in color)
+
+STATS = {"triangles": 0}
 class TriangularShape():
     '''
     Base class for triangular shapes
@@ -29,13 +42,15 @@ class TriangularShape():
         '''
         return []
 
-    def draw(self, screen):
+    def draw(self, screen, ox=0, oy=0):
         '''
         Draw the shape on the screen
         '''
         triangles = self.list_triangles()
-        for triangle in triangles:
-            ui.draw.polygon(screen, self.color, triangle)
+        STATS["triangles"] += len(triangles)
+        for i, triangle in enumerate(triangles):
+            pts = [(px + ox, py + oy) for (px, py) in triangle]
+            ui.draw.polygon(screen, facet(self.color, i), pts)
 
 class Square(TriangularShape):
     def __init__(self, x, y, size, color):
@@ -79,6 +94,124 @@ class Triangle(TriangularShape):
         triangle1 = [tl, tr, bl]
 
         return [triangle1]
+
+class Curve(TriangularShape):
+    '''
+    Create curve based on triangular shape
+    the curve is based on a function that is draw
+    '''
+
+    def __init__(self, start, end, width, height, color, nb_control_points=4, variation=50, resolution=50):
+        super().__init__(start[0], start[1], width, height, color)
+        self.p_start = start
+        self.p_end = end
+        self.resolution = resolution
+
+        self.control_points = self.generate_control_points(nb_control_points, variation)
+
+    def generate_control_points(self, nb_points, variation):
+        '''
+        TODO : retourne une liste de points, en partant de 
+        '''
+        x = self.p_start[0]
+        y = self.p_start[1]
+        points = [(x, y)]
+
+        for new_point in range(nb_points):
+            delt_x = x + (self.p_end[0] - x) * new_point
+            delt_y = y + (self.p_end[1] - y) * new_point
+
+            offset_x = random.uniform(-variation, variation)
+            offset_y = random.uniform(-variation, variation)
+
+            points.append((delt_x + offset_x, delt_y + offset_y))
+
+        points.append(self.p_end)
+        return points
+
+    def point_at(self, t):
+        '''
+        TODO
+        '''
+        nb_segments = len(self.control_points) - 1 #there's more points than segment
+        temp_pos = t * nb_segments
+        seg_id = int(temp_pos)
+        t_local = temp_pos - seg_id
+
+        p_a = self.control_points[seg_id]
+        p_b = self.control_points[seg_id + 1]
+
+        x = p_a[0] + (p_b[0] - p_a[0]) * t_local # debut + distance * time
+        y = p_a[1] + (p_b[1] - p_a[1]) * t_local # debut + distance * time
+        return (x, y)
+
+    def get_points(self):
+        '''
+        
+        '''
+        points = []
+        for i in range(self.resolution):
+            t = i / (self.resolution - 1)
+            points.append(self.point_at(t))
+
+        return points
+
+    def list_triangles(self):
+        '''
+        dgbfgn
+        '''
+        points = self.get_points()
+        triangles = []
+        hw = self.width / 2
+
+        for i in range(len(points) - 1):
+            p1 = points[i]
+            p2 = points[i+1]
+
+
+class TrianglePoints(TriangularShape):
+    '''
+    Create a triangle based on 3 points
+    '''
+    def __init__(self, a, b, c, width, height, color):
+        super().__init__(0, 0, width, height, color)
+        self.a = a
+        self.b = b
+        self.c = c
+
+    def list_triangles(self):
+        triangle1 = [self.a, self.b, self.c]
+        return [triangle1]
+
+    def getX(self):
+        return (self.a[0], self.b[0], self.c[0])
+
+    def setX(self, x_a, x_b, x_c):
+        self.a = (self.a[0] + x_a, self.a[1])
+        self.b = (self.b[0] + x_b, self.b[1])
+        self.c = (self.c[0] + x_c, self.c[1])
+
+class Group(TriangularShape):
+    'Permit to group shapes together and move them as a whole'
+ 
+    def __init__(self, x=0, y=0):
+        super().__init__(x, y, 0, 0, (0, 0, 0))
+        self.children = []
+ 
+    def add(self, *shapes):
+        self.children.extend(shapes)
+        return shapes[-1]
+ 
+    def list_triangles(self):
+        out = []
+        for child in self.children:
+            for tri in child.list_triangles():
+                out.append([(px + self.x, py + self.y) for (px, py) in tri])
+        return out
+ 
+    def draw(self, screen, ox=0, oy=0):
+        for child in self.children:
+            child.draw(screen, ox + self.x, oy + self.y)
     
 class Circle(TriangularShape):
     '''
@@ -109,3 +242,57 @@ class Circle(TriangularShape):
             triangles.append(triangle)
 
         return triangles
+
+class Quad(TriangularShape):
+ 
+    def __init__(self, points, color):
+        xs = []
+        ys = []
+        for x, y in points:
+            xs.append(x)
+            ys.append(y)
+
+        super().__init__(sum(xs) / 4, sum(ys) / 4,
+                         max(xs) - min(xs), max(ys) - min(ys), color)
+        self.points = points
+ 
+    def list_triangles(self):
+        a, b, c, d = self.points
+        return [[a, b, c], [a, c, d]]
+
+class Trapezoid(TriangularShape):
+ 
+    def __init__(self, x, y, w_top, w_bottom, height, color):
+        super().__init__(x, y, max(w_top, w_bottom), height, color)
+        self.w_top = w_top
+        self.w_bottom = w_bottom
+ 
+    def list_triangles(self):
+        tl = (self.x - self.w_top / 2, self.y - self.height / 2)
+        tr = (self.x + self.w_top / 2, self.y - self.height / 2)
+        bl = (self.x - self.w_bottom / 2, self.y + self.height / 2)
+        br = (self.x + self.w_bottom / 2, self.y + self.height / 2)
+        return [[tl, tr, bl], [tr, br, bl]]
+ 
+def _rgb(h, s, v):
+    return tuple(int(255 * c) for c in colorsys.hsv_to_rgb(h % 1.0, s, v))
+ 
+ 
+def make_palette(rng):
+    '''
+    make_palette(rng) -> dict
+    Generate a palette of colors for the train and its parts.
+    '''
+    h = rng.random()
+    return {
+        "body":    _rgb(h, rng.uniform(0.45, 0.75), rng.uniform(0.55, 0.80)),
+        "body2":   _rgb(h + 0.02, rng.uniform(0.40, 0.65), rng.uniform(0.40, 0.60)),
+        "accent":  _rgb(h + rng.choice([0.45, 0.5, 0.55]), 0.65, 0.85),
+        "roof":    _rgb(h, 0.25, 0.35),
+        "chassis": (48, 50, 58),
+        "wheel":   (34, 36, 42),
+        "hub":     (95, 100, 112),
+        "glass":   _rgb(h + 0.5, 0.20, 0.95),
+        "metal":   (120, 126, 138),
+        "dark":    (28, 30, 36),
+    }
