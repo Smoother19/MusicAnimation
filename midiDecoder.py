@@ -21,6 +21,6 @@ def decode():
 
     arr_fusionne = np.column_stack((intervals, pitches))
 
-    return arr_fusionne
+    return arr_fusionne, tempos.max()
 
     
