@@ -62,7 +62,7 @@ def gui(screen: ui.Surface):
             clouds_left = []
             for cloud in clouds:
                 cloud.draw(screen)
-                cloud.moving_cloud()
+                cloud.moving_cloud(train.speed/16)
                 
                 #Add to temp list the non valid clouds
                 if not cloud.is_out_of_screen(SCREEN_WIDTH):
@@ -90,7 +90,7 @@ def gui(screen: ui.Surface):
         smoke.update(dt, sx, sy, wind=train.speed)
         scroll -= train.speed * dt
         
-        draw_rails(screen, RAIL_Y, scroll)
+        #draw_rails(screen, RAIL_Y, scroll)
         smoke.draw(screen)
         train.draw(screen, train_x, 0)
 

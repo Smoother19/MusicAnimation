@@ -43,7 +43,15 @@ class TriangularShape():
         '''
         return []
 
-    def draw(self, screen, ox=0, oy=0):
+    def _rotate_point(self, point, pivot, angle):
+            px, py = point
+            ox, oy = pivot
+            dx, dy = px - ox, py - oy
+            cos_a, sin_a = math.cos(angle), math.sin(angle)
+
+            return (ox + dx * cos_a - dy * sin_a, oy + dx * sin_a + dy * cos_a)
+
+    def draw(self, screen, ox=0, oy=0, angle=0, pivot=None):
         '''
         Draw the shape on the screen
         '''
@@ -51,6 +59,8 @@ class TriangularShape():
         STATS["triangles"] += len(triangles)
         for i, triangle in enumerate(triangles):
             pts = [(px + ox, py + oy) for (px, py) in triangle]
+            if angle != 0 and pivot is not None:
+                pts = [self._rotate_point(p, pivot, angle) for p in pts]
             ui.draw.polygon(screen, facet(self.color, i), pts)
 
 class Square(TriangularShape):
@@ -213,30 +223,68 @@ class CurvesTrack():
             x = real_end[0]
             last_y = real_end[1]
 
-    def make_chunk(self, start_x, start_y):
+    def get_height(self, x_screen):
+        '''
+        Return the height of the road based of the x of the screen
+        '''
+        chunk_x = x_screen - self.scroll
+
+        for chunk in self.chunks:
+            lo, hi = sorted((chunk.p_start[0], chunk.p_end[0])) #manage both side
+            #check if the x is in the range
+            if lo <= chunk_x <= hi:
+                t = (chunk_x - chunk.p_start[0]) / self.chunk_length
+                t = max(0, min(1, t)) #if x is in border
+                return chunk.point_at(t)[1] #get y of the point in (t, y)
+
+        return self.y_base #in case
+
+
+    def get_info_track(self, x_screen, length):
+        '''
+        Return the y_center and the angle of the track based on the length and the x of the screen (y_center, angle)
+        '''
+        back_x = x_screen
+        front_x = x_screen + length
+
+        back_y = self.get_height(back_x)
+        front_y = self.get_height(front_x)
+
+        angle = math.atan2(front_y - back_y, front_x - back_x)
+        y_center = (front_y + back_y) / 2
+
+        return y_center, angle
+
+    def make_chunk(self, start_x, start_y, direction=1):
         '''
         Create new chunk to be added on the screen
         '''
-        end_x = start_x + self.chunk_length
+        end_x = start_x + direction * self.chunk_length
         end_y = self.y_base
-
         type_curve, a, b, c = Curve.get_random_params()
+
         chunk = Curve((start_x, start_y), (end_x, end_y), 8, (52, 48, 44), type_curve, a, b, c, amplitude=self.amplitude)
         return chunk, end_y
 
+    def _left_point(self, chunk):
+        if chunk.p_start[0] <= chunk.p_end[0]:
+            return chunk.p_start
+        else:
+            return chunk.point_at(1.0)
+
     def update(self, dt):
-        self.scroll -= self.speed * dt
+        self.scroll += self.speed * dt  # sens inversé
 
-        #get the first "curve"'s x position (with the scroll)
-        first_chunk = self.chunks[0].p_end[0] + self.scroll
-        if first_chunk < 0:
-            self.chunks.pop(0)
-            last_chunk = self.chunks[-1]
+        last = self.chunks[-1]
+        left_x = min(last.p_start[0], last.p_end[0]) + self.scroll  # bord gauche du dernier chunk
 
-            real_end = last_chunk.point_at(1.0)
+        if left_x > SCREEN_WIDTH:
+            self.chunks.pop(-1)
+            first_chunk = self.chunks[0]
+            real_start = self._left_point(first_chunk)
 
-            new_chunk, _ = self.make_chunk(real_end[0], real_end[1])
-            self.chunks.append(new_chunk)
+            new_chunk, _ = self.make_chunk(real_start[0], real_start[1], direction=-1)
+            self.chunks.insert(0, new_chunk)
 
     def draw(self, screen):
         for chunk in self.chunks:
@@ -288,9 +336,9 @@ class Group(TriangularShape):
                 out.append([(px + self.x, py + self.y) for (px, py) in tri])
         return out
  
-    def draw(self, screen, ox=0, oy=0):
+    def draw(self, screen, ox=0, oy=0, angle=0, pivot=None):
         for child in self.children:
-            child.draw(screen, ox + self.x, oy + self.y)
+            child.draw(screen, ox + self.x, oy + self.y, angle=angle, pivot=pivot)
     
 class Circle(TriangularShape):
     '''

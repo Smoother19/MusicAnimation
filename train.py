@@ -42,13 +42,16 @@ class Wheel(TriangularShape):
                   self.y + r * math.sin(2 * math.pi * (i + 1) / n))]
                 for i in range(n)]
 
-    def draw(self, screen, ox=0, oy=0):
+    def draw(self, screen, ox=0, oy=0, angle=0, pivot = None):
         for group, color in ((self.list_triangles(), self.color),
                              (self.spoke_triangles(), self.spoke_color),
                              (self.hub_triangles(), self.color)):
             STATS["triangles"] += len(group)
             for i, t in enumerate(group):
-                ui.draw.polygon(screen, facet(color, i), [(px + ox, py + oy) for px, py in t])
+                pts=[(px + ox, py + oy) for px, py in t]
+                if angle !=0 and pivot is not None:
+                    pts = [self._rotate_point(p, pivot, angle) for p in pts]
+                ui.draw.polygon(screen, facet(color, i), pts)
 
 
 class Train(Group):
