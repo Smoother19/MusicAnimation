@@ -238,7 +238,11 @@ class CurvesTrack():
                 t = max(0, min(1, t)) #if x is in border
                 return chunk.point_at(t)[1] #get y of the point in (t, y)
 
-        return self.y_base #in case
+        #Fall back
+        closest_chunk = min(self.chunks, key=lambda c: min(abs(chunk_x - c.p_start[0]), abs(chunk_x - c.p_end[0])))
+        lo, hi = sorted((closest_chunk.p_start[0], closest_chunk.p_end[0]))
+        t = 0.0 if abs(chunk_x - lo) < abs(chunk_x - hi) else 1.0
+        return closest_chunk.point_at(t)[1]
 
 
     def get_info_track(self, x_screen, length):

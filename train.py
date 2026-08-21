@@ -184,7 +184,7 @@ class Train(Group):
                 child_pivot = pivot
                 child_oy = oy + self.y
 
-            child.draw(screen, ox, child_oy, angle=child_angle, pivot=child_pivot)
+            child.draw(screen, ox + self.x, child_oy, angle=child_angle, pivot=child_pivot)
 
     # briques communes
 

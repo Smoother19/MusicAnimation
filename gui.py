@@ -96,8 +96,8 @@ def gui(screen: ui.Surface):
         
         #draw_rails(screen, RAIL_Y, scroll)
         curveTrack.draw(screen)
-        smoke.draw(screen)
-        train.draw(screen, ox=train_x, oy=y_center - RAIL_Y, angle=angle, pivot=pivot, track=curveTrack)
+        smoke.draw(screen, oy=y_center)
+        train.draw(screen, ox=train_x, oy=0, angle=angle, pivot=pivot, track=curveTrack)
         ui.display.flip()
 
         frame += 1
