@@ -233,7 +233,8 @@ class CurvesTrack():
             lo, hi = sorted((chunk.p_start[0], chunk.p_end[0])) #manage both side
             #check if the x is in the range
             if lo <= chunk_x <= hi:
-                t = (chunk_x - chunk.p_start[0]) / self.chunk_length
+                span = chunk.p_end[0] - chunk.p_start[0]
+                t = (chunk_x - chunk.p_start[0]) / span
                 t = max(0, min(1, t)) #if x is in border
                 return chunk.point_at(t)[1] #get y of the point in (t, y)
 

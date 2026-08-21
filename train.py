@@ -104,6 +104,7 @@ class Train(Group):
         cursor = 0
         loco, L = self._locomotive()
         loco.x = cursor
+        loco.length = L
         self.add(loco)
         cursor += L + self.GAP
 
@@ -122,6 +123,7 @@ class Train(Group):
 
             wagon, L = build()
             wagon.x = cursor
+            wagon.length = L
             self.add(wagon)
             cursor += L + self.GAP
 
@@ -168,6 +170,21 @@ class Train(Group):
         ax, ay = self.smoke_anchor
         return (ox + self.x + loco.x + ax,
                 oy + self.y + loco.y + ay)
+
+    def draw(self, screen, ox=0, oy=0, angle=0, pivot=None, track=None):
+        for child in self.children:
+            world_x = ox + self.x + child.x
+
+            if track is not None:
+                y_center, child_angle = track.get_info_track(world_x, child.length)
+                child_pivot = (world_x + child.length / 2, RAIL_Y)
+                child_oy = oy + self.y + (y_center - RAIL_Y)
+            else:
+                child_angle = angle
+                child_pivot = pivot
+                child_oy = oy + self.y
+
+            child.draw(screen, ox, child_oy, angle=child_angle, pivot=child_pivot)
 
     # briques communes
 

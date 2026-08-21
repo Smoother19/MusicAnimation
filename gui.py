@@ -86,15 +86,18 @@ def gui(screen: ui.Surface):
         clouds = clouds_left
         curveTrack.update(dt)
         train.update(dt)
+
+        y_center, angle = curveTrack.get_info_track(train_x, train.length)
+        pivot = (train_x + train.length / 2, RAIL_Y)
+
         sx, sy = train.smoke_position(train_x, 0)
         smoke.update(dt, sx, sy, wind=train.speed)
         scroll -= train.speed * dt
         
         #draw_rails(screen, RAIL_Y, scroll)
-        smoke.draw(screen)
-        train.draw(screen, train_x, 0)
-
         curveTrack.draw(screen)
+        smoke.draw(screen)
+        train.draw(screen, ox=train_x, oy=y_center - RAIL_Y, angle=angle, pivot=pivot, track=curveTrack)
         ui.display.flip()
 
         frame += 1
