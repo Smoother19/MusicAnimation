@@ -59,10 +59,14 @@ def gui(screen: ui.Surface, sync):
         t = ui.mixer.music.get_pos() / 1000.0
         if t >= 0:
             for note in sync.update(t):
-                if note["pitch"] < 55:                    # graves
+                if note["pitch"] < 55:
                     fireworks.append(Fireworks(*Fireworks.get_random_params()))
-                elif note["pitch"] > 75:                  # aigus
+                elif note["pitch"] > 75:
                     clouds.append(Cloud(*Cloud.get_random_param()))
+
+            target = SPEED * sync.speed_factor(t)
+            train.speed += (target - train.speed) * min(1.0, dt * 0.8)
+                
        
         STATS["triangles"] = 0
         clouds_left = []
@@ -130,7 +134,6 @@ def start_gui(isMidi: bool = False):
 
     gui(screen, sync)
 
-    ui.mixer.music.unload()
     try:
         os.remove(file_dir / filename)
         if not isMidi:
