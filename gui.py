@@ -93,6 +93,12 @@ def gui(screen: ui.Surface, sync):
             
             #Update clouds list 
             clouds = clouds_left
+
+
+        #Draw the mountains
+        mountains.draw(screen)
+        ridge_mid.draw(screen)
+        ridge_fore.draw(screen)
         
         if fireworks:
             fireworks_left = []
@@ -109,11 +115,6 @@ def gui(screen: ui.Surface, sync):
         clouds = clouds_left
         curveTrack.update(dt)
         train.update(dt)
-
-        #Draw the mountains
-        mountains.draw(screen)
-        ridge_mid.draw(screen)
-        ridge_fore.draw(screen)
 
         #Update the rain animation
         rain.update(dt)
