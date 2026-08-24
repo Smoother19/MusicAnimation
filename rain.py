@@ -6,11 +6,21 @@ from config import *
 
 class RainDrop(TriangularShape):
     '''
-    This class will create fireworks based on multiple triangles and make it explode
+    Represents a single falling raindrop rendered as an oriented triangle.
 
-        Attributes:
+    Attributes:
+        screen_width (int/float): Width of the display area.
+        screen_height (int/float): Height of the display area.
+        x (float): Current horizontal position on screen.
+        y (float): Current vertical position on screen.
+        speed (float): Vertical falling speed in pixels per second.
+        length (float): Visual length of the raindrop.
+        drift (float): Horizontal drift velocity (wind effect).
 
-        Methods:
+    Methods:
+        _respawn(y): Resets the position, speed, length, and drift of the raindrop.
+        update(delta=1): Updates the raindrop position and loops it back to the top when it leaves the screen.
+        list_triangles(): Computes and returns the 3 vertices forming the raindrop triangle.
     '''
 
     def __init__(self, screen_width, screen_height, width=2):
@@ -52,6 +62,16 @@ class RainDrop(TriangularShape):
 
 
 class Rain:
+    '''
+    Manages a collection of RainDrop instances to simulate a full rain effect.
+
+    Attributes:
+        drops (list[RainDrop]): Collection of active raindrops currently simulated.
+
+    Methods:
+        update(delta): Updates the positions and states of all managed raindrops.
+        draw(screen): Renders all raindrops onto the given Pygame surface.
+    '''
     def __init__(self, screen_width, screen_height, nb_drops=120):
         self.drops = [RainDrop(screen_width, screen_height) for _ in range(nb_drops)]
 
