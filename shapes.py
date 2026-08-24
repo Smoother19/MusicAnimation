@@ -43,7 +43,7 @@ class TriangularShape():
         '''
         return []
 
-    def _rotate_point(self, point, pivot, angle):
+    def rotate_point(self, point, pivot, angle):
             px, py = point
             ox, oy = pivot
             dx, dy = px - ox, py - oy
@@ -60,7 +60,7 @@ class TriangularShape():
         for i, triangle in enumerate(triangles):
             pts = [(px + ox, py + oy) for (px, py) in triangle]
             if angle != 0 and pivot is not None:
-                pts = [self._rotate_point(p, pivot, angle) for p in pts]
+                pts = [self.rotate_point(p, pivot, angle) for p in pts]
             ui.draw.polygon(screen, facet(self.color, i), pts)
 
 class Square(TriangularShape):
@@ -255,7 +255,11 @@ class CurvesTrack():
         back_y = self.get_height(back_x)
         front_y = self.get_height(front_x)
 
+        #To remove the space between the wagon
+        MAX_LEAN_ANGLE = math.radians(35)
         angle = math.atan2(front_y - back_y, front_x - back_x)
+
+        angle = max(-MAX_LEAN_ANGLE, min(MAX_LEAN_ANGLE, angle))
         y_center = (front_y + back_y) / 2
 
         return y_center, angle

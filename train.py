@@ -50,7 +50,7 @@ class Wheel(TriangularShape):
             for i, t in enumerate(group):
                 pts=[(px + ox, py + oy) for px, py in t]
                 if angle !=0 and pivot is not None:
-                    pts = [self._rotate_point(p, pivot, angle) for p in pts]
+                    pts = [self.rotate_point(p, pivot, angle) for p in pts]
                 ui.draw.polygon(screen, facet(color, i), pts)
 
 
@@ -172,8 +172,13 @@ class Train(Group):
                 oy + self.y + loco.y + ay)
 
     def draw(self, screen, ox=0, oy=0, angle=0, pivot=None, track=None):
+        bob = self.y - self._base_y
+        prev_back = None
+        coupler_h = -(2 * self.WHEEL_R + self.CHASSIS_H)
+
         for child in self.children:
             world_x = ox + self.x + child.x
+            length = getattr(child, "length", 0)
 
             if track is not None:
                 y_center, child_angle = track.get_info_track(world_x, child.length)
@@ -185,6 +190,36 @@ class Train(Group):
                 child_oy = oy + self.y
 
             child.draw(screen, ox + self.x, child_oy, angle=child_angle, pivot=child_pivot)
+
+            front_local = (world_x, child_oy + coupler_h)
+            back_local = (world_x + length, child_oy + coupler_h)
+
+            if child_pivot is not None and child_angle:
+                front_world = self.rotate_point(front_local, child_pivot, child_angle)
+                back_world = self.rotate_point(back_local, child_pivot, child_angle)
+            else:
+                front_world, back_world = front_local, back_local
+
+            if prev_back is not None:
+                self._draw_coupler(screen, prev_back, front_world)
+
+            prev_back = back_world
+
+    def _draw_coupler(self, screen, p1, p2, thickness=5, color=(60, 62, 70)):
+        ang = math.atan2(p2[1] -p1[1], p2[0] - p1[0])
+        perp = ang + math.pi / 2
+        hw = thickness / 2
+
+        a1 = (p1[0] + math.cos(perp) * hw, p1[1] + math.sin(perp) * hw)
+        a2 = (p1[0] - math.cos(perp) * hw, p1[1] - math.sin(perp) * hw)
+        b1 = (p2[0] + math.cos(perp) * hw, p2[1] + math.sin(perp) * hw)
+        b2 = (p2[0] - math.cos(perp) * hw, p2[1] - math.sin(perp) * hw)
+
+        tri1 = TrianglePoints(a1, a2, b1, 0, 0, color)
+        tri2 = TrianglePoints(a2, b2, b1, 0, 0, color)
+
+        tri1.draw(screen)
+        tri2.draw(screen)
 
     # briques communes
 
