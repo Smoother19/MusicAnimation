@@ -4,6 +4,8 @@ from shapes import *
 from cloud import Cloud
 from fireworks import Fireworks
 from train import Train
+from rain import Rain
+from moutains import Mountains
 import random
 from smokeemitter import SmokeEmitter
 from config import *
@@ -37,6 +39,14 @@ def gui(screen: ui.Surface, sync):
     train_x = (SCREEN_WIDTH - train.length) / 2
     scroll = 0.0
     smoke = SmokeEmitter()
+
+    curveTrack = CurvesTrack(RAIL_Y, amplitude=25, speed=100)
+    rain = Rain(SCREEN_WIDTH, SCREEN_HEIGHT, nb_drops=150)
+
+    mountains = Mountains((0, 300), (SCREEN_WIDTH, 300), width=8, color=(60, 70, 90), type_curve=1, a=1.5, b=2.0, amplitude=60)
+    ridge_mid = Mountains((0, 380),(SCREEN_WIDTH, 380), width=8,color=(45, 55, 75),type_curve=1,a=2.0,b=3.5,amplitude=40,bottom_y=SCREEN_HEIGHT)
+    ridge_fore = Mountains((0, 460),(SCREEN_WIDTH, 460), width=8,color=(30, 40, 60),type_curve=1,a=1.0,b=5.0,amplitude=25,bottom_y=SCREEN_HEIGHT)
+
     while RUNNING:
         screen.fill(BACKGROUND)
         dt = clock.tick(60) / 1000.0
@@ -75,7 +85,7 @@ def gui(screen: ui.Surface, sync):
             clouds_left = []
             for cloud in clouds:
                 cloud.draw(screen)
-                cloud.moving_cloud()
+                cloud.moving_cloud(train.speed/16)
                 
                 #Add to temp list the non valid clouds
                 if not cloud.is_out_of_screen(SCREEN_WIDTH):
@@ -97,14 +107,29 @@ def gui(screen: ui.Surface, sync):
 
         #Update clouds list
         clouds = clouds_left
+        curveTrack.update(dt)
         train.update(dt)
+
+        #Draw the mountains
+        mountains.draw(screen)
+        ridge_mid.draw(screen)
+        ridge_fore.draw(screen)
+
+        #Update the rain animation
+        rain.update(dt)
+        rain.draw(screen)
+
+        y_center, angle = curveTrack.get_info_track(train_x, train.length)
+        pivot = (train_x + train.length / 2, RAIL_Y)
+
         sx, sy = train.smoke_position(train_x, 0)
         smoke.update(dt, sx, sy, wind=train.speed)
         scroll -= train.speed * dt
         
-        draw_rails(screen, RAIL_Y, scroll)
-        smoke.draw(screen)
-        train.draw(screen, train_x, 0)
+        #draw_rails(screen, RAIL_Y, scroll)
+        curveTrack.draw(screen)
+        smoke.draw(screen, oy=y_center)
+        train.draw(screen, ox=train_x, oy=0, angle=angle, pivot=pivot, track=curveTrack)
         ui.display.flip()
 
         frame += 1
