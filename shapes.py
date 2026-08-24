@@ -296,6 +296,25 @@ class CurvesTrack():
             self.chunks.insert(0, new_chunk)
 
     def draw(self, screen):
+        ground_color = (25, 28, 38)
+
+        track_points = []
+
+        for chunk in self.chunks:
+            pts = chunk.get_points()
+            for i in range(len(pts) -1):
+                top_left = (pts[i][0] + self.scroll, pts[i][1])
+                top_right = (pts[i+1][0] + self.scroll, pts[i+1][1])
+
+                bottom_left = (top_left[0], SCREEN_HEIGHT)
+                bottom_right = (top_right[0], SCREEN_HEIGHT)
+
+                t1 = TrianglePoints(top_left, bottom_left, top_right, 0, 0, ground_color)
+                t2 = TrianglePoints(bottom_left, bottom_right, top_right, 0, 0, ground_color)
+
+                t1.draw(screen)
+                t2.draw(screen)
+        
         for chunk in self.chunks:
             chunk.draw(screen, ox=self.scroll, oy=0)
 

@@ -5,6 +5,7 @@ from cloud import Cloud
 from fireworks import Fireworks
 from train import Train
 from rain import Rain
+from moutains import Mountains
 import random
 from smokeemitter import SmokeEmitter
 from config import *
@@ -37,6 +38,10 @@ def gui(screen: ui.Surface):
 
     curveTrack = CurvesTrack(RAIL_Y, amplitude=25, speed=100)
     rain = Rain(SCREEN_WIDTH, SCREEN_HEIGHT, nb_drops=150)
+
+    mountains = Mountains((0, 300), (SCREEN_WIDTH, 300), width=8, color=(60, 70, 90), type_curve=1, a=1.5, b=2.0, amplitude=60)
+    ridge_mid = Mountains((0, 380),(SCREEN_WIDTH, 380), width=8,color=(45, 55, 75),type_curve=1,a=2.0,b=3.5,amplitude=40,bottom_y=SCREEN_HEIGHT)
+    ridge_fore = Mountains((0, 460),(SCREEN_WIDTH, 460), width=8,color=(30, 40, 60),type_curve=1,a=1.0,b=5.0,amplitude=25,bottom_y=SCREEN_HEIGHT)
 
     while RUNNING:
         screen.fill(BACKGROUND)
@@ -88,6 +93,11 @@ def gui(screen: ui.Surface):
         clouds = clouds_left
         curveTrack.update(dt)
         train.update(dt)
+
+        #Draw the mountains
+        mountains.draw(screen)
+        ridge_mid.draw(screen)
+        ridge_fore.draw(screen)
 
         #Update the rain animation
         rain.update(dt)
