@@ -4,6 +4,7 @@ from shapes import *
 from cloud import Cloud
 from fireworks import Fireworks
 from train import Train
+from rain import Rain
 import random
 from smokeemitter import SmokeEmitter
 from config import *
@@ -35,6 +36,7 @@ def gui(screen: ui.Surface):
     smoke = SmokeEmitter()
 
     curveTrack = CurvesTrack(RAIL_Y, amplitude=25, speed=100)
+    rain = Rain(SCREEN_WIDTH, SCREEN_HEIGHT, nb_drops=150)
 
     while RUNNING:
         screen.fill(BACKGROUND)
@@ -86,6 +88,10 @@ def gui(screen: ui.Surface):
         clouds = clouds_left
         curveTrack.update(dt)
         train.update(dt)
+
+        #Update the rain animation
+        rain.update(dt)
+        rain.draw(screen)
 
         y_center, angle = curveTrack.get_info_track(train_x, train.length)
         pivot = (train_x + train.length / 2, RAIL_Y)
