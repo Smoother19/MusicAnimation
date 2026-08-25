@@ -5,22 +5,27 @@ from shapes import *
 
 class Cloud(Group):
     '''
-    This class will create clouds based on multiple triangles
+    Procedural cloud shape composed of an interconnected fan of triangles.
 
     Attributes:
-            radius: radius of the circle based for the cloud
-            center: tuple of (x, y) for the center of the cirle
-            nb_points: nb of different points for the triangles in the cloud
-            irregularity: create irregularity in the amplitude of the radius
-            nb_harmonics: number of harmonics for the radius (to create diversity)
-            scale_x: stretch the shape in x
-            scale_y: stretch the shape in y
-    
-        Methods:
-            generate_clouds_points(): create list of differents points to be used to create triangle
-            list_triangles(center, points, color, width, height): Create the triangle based on the points
-            generate_cloud(center, radius, color, nb_points=14, width=100, height=50): Drw the shape of the cloud
-            def moving_cloud(cloud, speed=1): Generate a little animation of movment to the
+        radius (float): Base radius used to generate the cloud perimeter.
+        center (tuple[float, float]): (x, y) coordinates of the cloud's center.
+        color (tuple[int, int, int]): Base RGB color of the cloud.
+        nb_points (int): Number of perimeter vertices to sample.
+        irregularity (float): Amplitude factor controlling radius distortion.
+        nb_harmonics (int): Number of sine wave harmonics for shape diversity.
+        scale_x (float): Horizontal stretch factor.
+        scale_y (float): Vertical stretch factor.
+        width (float): Visual width assigned to triangle sub-elements.
+        height (float): Visual height assigned to triangle sub-elements.
+
+    Methods:
+        get_random_param(): Generates randomized parameters for cloud generation.
+        generate_clouds_points(): Computes distorted (x, y) perimeter points.
+        list_triangles(points): Creates TrianglePoints connecting center to perimeter points.
+        generate_cloud(): Helper method to re-generate the cloud triangles.
+        moving_cloud(speed=1): Shifts the cloud horizontally.
+        is_out_of_screen(screen_width): Checks if the cloud has moved off-screen.
     '''
 
     def __init__(self, radius, center, color, nb_points=20, 

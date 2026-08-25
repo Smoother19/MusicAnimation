@@ -6,11 +6,25 @@ from config import *
 
 class Fireworks(TriangularShape):
     '''
-    This class will create fireworks based on multiple triangles and make it explode
+    Simulates a firework explosion by rendering expanding particle rays as triangles.
 
-        Attributes:
+    Attributes:
+        x (float): Horizontal origin point of the explosion.
+        y (float): Vertical origin point of the explosion.
+        based_color (tuple[int, int, int]): Initial RGB color of the firework rays.
+        color (tuple[int, int, int]): Current RGB color (fades over time).
+        gravity (float): Downward acceleration applied to the rays.
+        lifespan (float/int): Maximum age (in frames/ticks) before the firework expires.
+        ray_width (float): Thickness of the base of each ray triangle.
+        age (float/int): Elapsed time since the explosion started.
+        rays (list[tuple[float, float]]): List of (angle, speed) tuples defining each ray.
 
-        Methods:
+    Methods:
+        get_random_params(): Static helper returning random (x, y, color) values.
+        update(delta=1): Advances the age of the firework and updates its color fade.
+        is_done(): Returns True if the firework has exceeded its lifespan.
+        get_color(): Computes the faded color based on current age and lifespan.
+        list_triangles(): Computes the 3 vertices for each ray at the current time t.
     '''
 
     def __init__(self, x, y, color, nb_rays=30, min_speed=2, max_speed=10, gravity=0.15, lifespan=60, ray_width=4):
