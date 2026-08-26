@@ -74,3 +74,29 @@ class SyncMusic():
         if abs(r - 1.0) < dead:
             return 1.0
         return max(lo, min(hi, r))
+
+    @property
+    def duration(self):
+        '''
+        Duree totale du morceau en secondes (fin de la derniere note)
+        '''
+        if not self.notes:
+            return 0.0
+        return max(n["end"] for n in self.notes)
+
+    def energy(self, t, ceiling=2.0):
+        '''
+        Densite de notes normalisee entre 0.0 (silence) et 1.0 (passage dense)
+        '''
+        if self.ref_count <= 0:
+            return 0.0
+        return max(0.0, min(1.0, self.density(t) / (self.ref_count * ceiling)))
+
+    def speed_factor(self, t, lo=0.75, hi=1.35, dead=0.20):
+        d = self.density(t)
+        if self.ref_count <= 0:
+            return 1.0
+        r = d / self.ref_count
+        if abs(r - 1.0) < dead:
+            return 1.0
+        return max(lo, min(hi, r))
