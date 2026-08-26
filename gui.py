@@ -112,7 +112,11 @@ def gui(screen: ui.Surface, sync):
         for ridge, base_color in zip((mountains, ridge_mid, ridge_fore), MOUNTAIN_COLORS):
             ridge.color = sky.tint(base_color)
             ridge.draw(screen)
-            ridge.update(dt, train.speed * 1.5)
+
+        # 2. Mise à jour du défilement avec effet de Parallaxe (vitesses différentes)
+        mountains.update(dt, train.speed * 0.2)   # Montagnes de fond (très lentes)
+        ridge_mid.update(dt, train.speed * 0.5)   # Collines du milieu (vitesse moyenne)
+        ridge_fore.update(dt, train.speed * 0.8)  # Collines de devant (plus rapides)
         
         if fireworks:
             fireworks_left = []
