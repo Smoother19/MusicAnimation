@@ -41,7 +41,7 @@ def gui(screen: ui.Surface, sync):
     scroll = 0.0
     smoke = SmokeEmitter()
 
-    curveTrack = CurvesTrack(RAIL_Y, amplitude=25, speed=100)
+    curveTrack = CurvesTrack(RAIL_Y, amplitude=25)
     rain = Rain(SCREEN_WIDTH, SCREEN_HEIGHT, nb_drops=150)
 
     sky = Sky(sync)
@@ -112,6 +112,7 @@ def gui(screen: ui.Surface, sync):
         for ridge, base_color in zip((mountains, ridge_mid, ridge_fore), MOUNTAIN_COLORS):
             ridge.color = sky.tint(base_color)
             ridge.draw(screen)
+            ridge.update(dt, train.speed * 1.5)
         
         if fireworks:
             fireworks_left = []
@@ -126,7 +127,7 @@ def gui(screen: ui.Surface, sync):
 
         #Update clouds list
         clouds = clouds_left
-        curveTrack.update(dt)
+        curveTrack.update(dt, train.speed * 1.5)
         train.update(dt)
 
         #Update the rain animation

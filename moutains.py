@@ -17,6 +17,7 @@ class Mountains(Curve):
         super().__init__(start, end, width, color, type_curve, a, b, c, 
                          height, amplitude, resolution)
         self.bottom_y = bottom_y
+        self.scroll = 10.0
 
     def list_triangles(self):
         points = self.get_points()
@@ -32,3 +33,16 @@ class Mountains(Curve):
             triangles.append([bottom_left, bottom_right, top_right])
 
         return triangles
+
+    def update(self, dt, speed=10):
+        self.scroll -= speed * dt
+
+    def draw(self, screen, ox=0, oy=0, angle=0 ,pivot= None):
+        width = self.p_end[0] - self.p_start[0] #width of the whole mountain
+
+        offset_x = self.scroll % width  #the deplacement of the mountain (based on the width)
+
+        super().draw(screen, ox - offset_x, oy, angle, pivot)
+
+        #new draw to create the loop
+        super().draw(screen, ox - offset_x + width, oy, angle, pivot)
