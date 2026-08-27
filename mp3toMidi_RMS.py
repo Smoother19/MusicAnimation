@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 music_dir = Path("sounds")
 output_dir = Path("output")
 
-sampling_rate = 22050
-hop_length = 512
+sampling_rate = 44100
+hop_length = 256
 frame_length = 2048
 
 def handle_midi_passthrough(filename: str, music_dir, output_dir) -> bool:
@@ -32,7 +32,7 @@ def stft_calculation(y, sr):
 
     fig, ax = plt.subplots(nrows=2, sharex=True)
     img = lr.display.specshow(S_stft, vscale="dBFS",
-                                sr=sr, hop_length=512, x_axis="time", y_axis="hz", ax=ax[0])
+                                sr=sr, hop_length=hop_length, x_axis="time", y_axis="hz", ax=ax[0])
     lr.display.colorbar_db(img, label="dBFS")
     ax[0].set(title="Spectrogram")
     ax[0].label_outer()
@@ -205,7 +205,7 @@ def get_midi_note(y_segment, sr, stft):
     f0, voiced_flag, voiced_prob = lr.pyin(
         y=y_segment,
         fmin=lr.note_to_hz('C2'),
-        fmax=lr.note_to_hz('C7'),
+        fmax=22050,
         sr=sr,
         frame_length=frame_length,
         hop_length=hop_length
@@ -239,7 +239,7 @@ def hz_to_midi_note(pitch_hz):
         return midi_note
 
 def generate_midi(segments):
-    midi = pm.PrettyMIDI(resolution=480)
+    midi = pm.PrettyMIDI(resolution=600)
 
     piano_track = pm.Instrument(program=0, name="Piano")
     trumpet_track = pm.Instrument(program=56, name="Trompette")
@@ -247,7 +247,7 @@ def generate_midi(segments):
     for seg in segments: 
         if seg["midi_note"] is None:
             continue
-        
+
         note = pm.Note(
             velocity=100,
             pitch=seg["midi_note"],
