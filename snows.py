@@ -47,9 +47,9 @@ class SnowsManager:
         self.snowflakes = [Snow(screen_width, screen_height, color) for _ in range(nb_snow)]
 
     def update(self, dt):
-        for leaf in self.snowflakes:
-            leaf.update(dt)
+        for snow in self.snowflakes:
+            snow.update(dt)
 
     def draw(self, screen):
-        for leaf in self.snowflakes:
-            leaf.draw(screen)
+        for snow in self.snowflakes:
+            snow.draw(screen)
