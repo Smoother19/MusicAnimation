@@ -95,16 +95,34 @@ def calibrate(plot=True):
 
     return results
 
+def duration_error(notes, reference_path, tolerance=0.15):
+    """Median relative error on the duration of correctly detected notes."""
+    ref = pretty_midi.PrettyMIDI(reference_path)
+    expected = [(n.pitch, n.start, n.end - n.start)
+                for inst in ref.instruments for n in inst.notes]
+
+    errors = []
+    for note in notes:
+        start, end = note.seconds()
+        for pitch, r_start, r_duration in expected:
+            if pitch == note.midi and abs(r_start - start) < tolerance:
+                errors.append(abs((end - start) - r_duration) / r_duration)
+                break
+
+    return float(np.median(errors)) if errors else None
 
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "transcription"
 
     if mode == "transcription":
-        _, notes = transcribe(PIANO)
-        print(f"{len(notes)} notes detected")
-        recall, precision = evaluate(notes, PIANO_REF)
-        print(f"recall    : {100 * recall:.0f}%")
-        print(f"precision : {100 * precision:.0f}%")
+        from transcription import analyze
+        for refine in (False, True):
+            notes = analyze(PIANO, classify=False, refine_timing=refine)
+            recall, precision = evaluate(notes, PIANO_REF)
+            err = duration_error(notes, PIANO_REF)
+            print(f"refine={refine!s:5s}  recall {100*recall:.0f}%  "
+                  f"precision {100*precision:.0f}%  "
+                  f"duration error {100*err:.0f}%")
     elif mode == "calibration":
         calibrate()
     else:
