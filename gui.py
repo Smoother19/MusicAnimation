@@ -117,19 +117,17 @@ def gui(screen: ui.Surface, sync):
             #Update clouds list 
             clouds = clouds_left
 
+        mountains.update(dt, train.speed * 0.2)
+        ridge_mid.update(dt, train.speed * 0.5)
+        ridge_fore.update(dt, train.speed * 0.8)
 
         #Draw the mountains, teintees par l'heure du jour
-        for ridge, base_color in zip((mountains, ridge_mid, ridge_fore), MOUNTAIN_COLORS):
-            ridge.color = sky.tint(base_color)
-            ridge.draw(screen)
-
-        birds.draw(screen, PLANE_MID) 
+        for ridge in mountain_chains:
             ridge.draw(screen, sky)
 
-        # 2. Mise à jour du défilement avec effet de Parallaxe (vitesses différentes)
-        mountains.update(dt, train.speed * 0.2)   # Montagnes de fond (très lentes)
-        ridge_mid.update(dt, train.speed * 0.5)   # Collines du milieu (vitesse moyenne)
-        ridge_fore.update(dt, train.speed * 0.8)  # Collines de devant (plus rapides)
+        ridge.draw(screen, sky)
+        
+        birds.draw(screen, PLANE_MID) 
 
         #Update the season's managment
         mg_season.update(dt, sky.total_phases, screen, mountain_chains)
