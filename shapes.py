@@ -2,6 +2,7 @@ import colorsys
 import pygame as ui
 import math
 import random
+from config import *
 
 FACET_STRENGTH = 0.12     # 0 = uniforme | 0.06 = leger relief | 0.25 = debug
 
@@ -42,7 +43,15 @@ class TriangularShape():
         '''
         return []
 
-    def draw(self, screen, ox=0, oy=0):
+    def rotate_point(self, point, pivot, angle):
+            px, py = point
+            ox, oy = pivot
+            dx, dy = px - ox, py - oy
+            cos_a, sin_a = math.cos(angle), math.sin(angle)
+
+            return (ox + dx * cos_a - dy * sin_a, oy + dx * sin_a + dy * cos_a)
+
+    def draw(self, screen, ox=0, oy=0, angle=0, pivot=None):
         '''
         Draw the shape on the screen
         '''
@@ -50,6 +59,8 @@ class TriangularShape():
         STATS["triangles"] += len(triangles)
         for i, triangle in enumerate(triangles):
             pts = [(px + ox, py + oy) for (px, py) in triangle]
+            if angle != 0 and pivot is not None:
+                pts = [self.rotate_point(p, pivot, angle) for p in pts]
             ui.draw.polygon(screen, facet(self.color, i), pts)
 
 class Square(TriangularShape):
@@ -101,49 +112,62 @@ class Curve(TriangularShape):
     the curve is based on a function that is draw
     '''
 
-    def __init__(self, start, end, width, height, color, nb_control_points=4, variation=50, resolution=50):
+    def __init__(self, start, end, width, color, type_curve=-1, a = 1.0, b = 0.0, c = 0.0, height= 0, amplitude=100, resolution=50):
         super().__init__(start[0], start[1], width, height, color)
         self.p_start = start
         self.p_end = end
+        self.amplitude = amplitude
         self.resolution = resolution
+        self.a = a
+        self.b = b 
+        self.c = c
+        self.type_curve = type_curve
+        self.rand = random.randint(0, 100)
 
-        self.control_points = self.generate_control_points(nb_control_points, variation)
+    def get_random_params():
+        type_curve = 1
+        a = random.uniform(0, 3)
+        b = random.uniform(0, 2)
+        c = random.uniform(0, 3)
+        return (type_curve, a, b, c)
 
-    def generate_control_points(self, nb_points, variation):
-        '''
-        TODO : retourne une liste de points, en partant de 
-        '''
-        x = self.p_start[0]
-        y = self.p_start[1]
-        points = [(x, y)]
+    def parabola(self, x):
+        return self.a * math.pow(x, 2) + self.b * x + self.c
 
-        for new_point in range(nb_points):
-            delt_x = x + (self.p_end[0] - x) * new_point
-            delt_y = y + (self.p_end[1] - y) * new_point
+    def sinus(self, x):
+        return self.a * math.sin(x * self.b + self.c)
 
-            offset_x = random.uniform(-variation, variation)
-            offset_y = random.uniform(-variation, variation)
+    def cosinus(self, x):
+        return self.a * math.cos(x * self.b + self.c)
 
-            points.append((delt_x + offset_x, delt_y + offset_y))
-
-        points.append(self.p_end)
-        return points
+    def cubic(self, x):
+        return self.a * math.pow(x, 3) + self.b * x + self.c
 
     def point_at(self, t):
-        '''
-        TODO
-        '''
-        nb_segments = len(self.control_points) - 1 #there's more points than segment
-        temp_pos = t * nb_segments
-        seg_id = int(temp_pos)
-        t_local = temp_pos - seg_id
+        x = self.p_start[0] + (self.p_end[0] - self.p_start[0]) * t 
+        x_norm = -1 + 2 * t     #norm it to be used in function
 
-        p_a = self.control_points[seg_id]
-        p_b = self.control_points[seg_id + 1]
+        y_shape = self.get_y_shape(x_norm)
+        y_shape_start = self.get_y_shape(-1)
 
-        x = p_a[0] + (p_b[0] - p_a[0]) * t_local # debut + distance * time
-        y = p_a[1] + (p_b[1] - p_a[1]) * t_local # debut + distance * time
+        y = self.p_start[1] + (self.p_end[1] - self.p_start[1]) * t + (y_shape - y_shape_start) * self.amplitude
+
         return (x, y)
+
+    def get_y_shape(self, x_norm):
+        #it will not be the same because the x isn't the same, it stays between -1 and 1
+        if self.type_curve == -1:
+            if self.rand <= 25:
+                return self.parabola(x_norm)
+            elif self.rand <= 50:
+                return self.sinus(x_norm)
+            elif self.rand <= 75:
+                return self.cosinus(x_norm)
+            else:
+                return self.cubic(x_norm)
+        elif self.type_curve == 1:
+            return self.sinus(x_norm)
+
 
     def get_points(self):
         '''
@@ -157,16 +181,147 @@ class Curve(TriangularShape):
         return points
 
     def list_triangles(self):
-        '''
-        dgbfgn
-        '''
         points = self.get_points()
         triangles = []
         hw = self.width / 2
 
         for i in range(len(points) - 1):
             p1 = points[i]
-            p2 = points[i+1]
+            p2 = points[i + 1]
+
+            angle = math.atan2(p2[1] - p1[1], p2[0] - p1[0])
+            perp = angle + math.pi / 2
+
+            a1 = (p1[0] + math.cos(perp) * hw, p1[1] + math.sin(perp) * hw)
+            a2 = (p1[0] - math.cos(perp) * hw, p1[1] - math.sin(perp) * hw)
+            b1 = (p2[0] + math.cos(perp) * hw, p2[1] + math.sin(perp) * hw)
+            b2 = (p2[0] - math.cos(perp) * hw, p2[1] - math.sin(perp) * hw)
+
+            triangles.append([a1, a2, b1])
+            triangles.append([a2, b2, b1])
+
+        return triangles
+
+class CurvesTrack():
+    def __init__(self, y_base, chunk_length=400, amplitude=100, speed=100):
+        '''
+        Create a track of multiple curves
+        '''
+        self.y_base = y_base
+        self.chunk_length = chunk_length
+        self.amplitude = amplitude
+        self.speed = speed
+        self.scroll = 0.0
+        self.chunks = []
+
+        x = 0
+        last_y = y_base
+        while x < SCREEN_WIDTH + chunk_length:
+            chunk, _ = self.make_chunk(x, last_y)
+            self.chunks.append(chunk)
+            real_end = chunk.point_at(1.0)
+            x = real_end[0]
+            last_y = real_end[1]
+
+    def get_height(self, x_screen):
+        '''
+        Return the height of the road based of the x of the screen
+        '''
+        chunk_x = x_screen - self.scroll
+
+        for chunk in self.chunks:
+            lo, hi = sorted((chunk.p_start[0], chunk.p_end[0])) #manage both side
+            #check if the x is in the range
+            if lo <= chunk_x <= hi:
+                span = chunk.p_end[0] - chunk.p_start[0]
+                t = (chunk_x - chunk.p_start[0]) / span
+                t = max(0, min(1, t)) #if x is in border
+                return chunk.point_at(t)[1] #get y of the point in (t, y)
+
+        #Fall back
+        closest_chunk = min(self.chunks, key=lambda c: min(abs(chunk_x - c.p_start[0]), abs(chunk_x - c.p_end[0])))
+        lo, hi = sorted((closest_chunk.p_start[0], closest_chunk.p_end[0]))
+        t = 0.0 if abs(chunk_x - lo) < abs(chunk_x - hi) else 1.0
+        return closest_chunk.point_at(t)[1]
+
+
+    def get_info_track(self, x_screen, length):
+        '''
+        Return the y_center and the angle of the track based on the length and the x of the screen (y_center, angle)
+        '''
+        back_x = x_screen
+        front_x = x_screen + length
+
+        back_y = self.get_height(back_x)
+        front_y = self.get_height(front_x)
+
+        #To remove the space between the wagon
+        MAX_LEAN_ANGLE = math.radians(35)
+        angle = math.atan2(front_y - back_y, front_x - back_x)
+
+        angle = max(-MAX_LEAN_ANGLE, min(MAX_LEAN_ANGLE, angle))
+        y_center = (front_y + back_y) / 2
+
+        return y_center, angle
+
+    def make_chunk(self, start_x, start_y, direction=1):
+        '''
+        Create new chunk to be added on the screen
+        '''
+        end_x = start_x + direction * self.chunk_length
+        end_y = self.y_base
+        type_curve, a, b, c = Curve.get_random_params()
+
+        chunk = Curve((start_x, start_y), (end_x, end_y), 8, (52, 48, 44), type_curve, a, b, c, amplitude=self.amplitude)
+        return chunk, end_y
+
+    def _left_point(self, chunk):
+        if chunk.p_start[0] <= chunk.p_end[0]:
+            return chunk.p_start
+        else:
+            return chunk.point_at(1.0)
+
+    def update(self, dt):
+        self.scroll += self.speed * dt  # sens inversé
+
+        last = self.chunks[-1]
+        left_x = min(last.p_start[0], last.p_end[0]) + self.scroll  # bord gauche du dernier chunk
+
+        if left_x > SCREEN_WIDTH:
+            self.chunks.pop(-1)
+            first_chunk = self.chunks[0]
+            real_start = self._left_point(first_chunk)
+
+            new_chunk, _ = self.make_chunk(real_start[0], real_start[1], direction=-1)
+            self.chunks.insert(0, new_chunk)
+
+    def draw(self, screen):
+        ground_color = (25, 28, 38)
+
+        track_points = []
+
+        for chunk in self.chunks:
+            pts = chunk.get_points()
+            for i in range(len(pts) -1):
+                top_left = (pts[i][0] + self.scroll, pts[i][1])
+                top_right = (pts[i+1][0] + self.scroll, pts[i+1][1])
+
+                bottom_left = (top_left[0], SCREEN_HEIGHT)
+                bottom_right = (top_right[0], SCREEN_HEIGHT)
+
+                t1 = TrianglePoints(top_left, bottom_left, top_right, 0, 0, ground_color)
+                t2 = TrianglePoints(bottom_left, bottom_right, top_right, 0, 0, ground_color)
+
+                t1.draw(screen)
+                t2.draw(screen)
+        
+        for chunk in self.chunks:
+            chunk.draw(screen, ox=self.scroll, oy=0)
+
+        for chunk in self.chunks:
+            joint = chunk.point_at(1.0)
+            patch = Circle(joint[0] + self.scroll, joint[1], chunk.width /2, chunk.color, 10)
+            patch.draw(screen)
 
 
 class TrianglePoints(TriangularShape):
@@ -209,9 +364,9 @@ class Group(TriangularShape):
                 out.append([(px + self.x, py + self.y) for (px, py) in tri])
         return out
  
-    def draw(self, screen, ox=0, oy=0):
+    def draw(self, screen, ox=0, oy=0, angle=0, pivot=None):
         for child in self.children:
-            child.draw(screen, ox + self.x, oy + self.y)
+            child.draw(screen, ox + self.x, oy + self.y, angle=angle, pivot=pivot)
     
 class Circle(TriangularShape):
     '''

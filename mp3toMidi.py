@@ -1,8 +1,3 @@
-import librosa
-import pretty_midi
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.ndimage import *
 from pathlib import Path
 from shutil import copy as cp
 import numpy as np
@@ -23,21 +18,22 @@ fmin = librosa.note_to_hz("C2")
 music_dir = Path("sounds")
 output_dir = Path("output")
 
-def decode(filename:str):
+
+def handle_midi_passthrough(filename: str, music_dir, output_dir) -> bool:
     filetype = Path(filename).suffix
-    if ".mid" in filetype :
+    if ".mid" in filetype:
         cp(music_dir / filename, output_dir / "transcription.mid")
         print("The input file is already a Midi file !")
         return True
+    return False
 
-    # chargement + stft/cqt
-    y, sr = librosa.load(music_dir / filename,sr=None)
+
+def load_audio_and_transforms(filename: str, music_dir, HOP, BPO, N_BINS):
+    y, sr = librosa.load(music_dir / filename, sr=None)
 
     tuning = librosa.estimate_tuning(y=y, sr=sr)
-    if tuning == None :
+    if tuning == None:
         tuning = 0.0
-
-    fmin = librosa.note_to_hz("C2")
 
     S_stft = librosa.stft(y, hop_length=HOP)
 
@@ -119,7 +115,7 @@ def analyze_rhythm(logS, sr, HOP, S_stft):
     onset_times = librosa.frames_to_time(onset_frames, sr=sr, hop_length=HOP)
 
     tempo, beats = librosa.beat.beat_track(onset_envelope=onset_env,
-                                        sr=sr, hop_length=HOP)   # tempo
+                                            sr=sr, hop_length=HOP)  # tempo
     tempo = float(np.atleast_1d(tempo)[0])
 
     beats = np.atleast_1d(beats)
@@ -128,22 +124,23 @@ def analyze_rhythm(logS, sr, HOP, S_stft):
 
     beat_times = librosa.frames_to_time(beats, sr=sr, hop_length=HOP)
 
+    return onset_frames, onset_times, tempo, beats, beat_times
 
-    # lissage
-    def whiten(C, size=48, floor_ratio=0.01):
-        p = uniform_filter1d(C.astype(np.float64) ** 2, size=size,
-                            axis=0, mode="nearest")
-        local = np.sqrt(np.maximum(p, 0.0))
-        return C / np.maximum(local, floor_ratio * local.max() + 1e-10)
 
+def whiten(C, size=48, floor_ratio=0.01):
+    p = uniform_filter1d(C.astype(np.float64) ** 2, size=size,
+                          axis=0, mode="nearest")
+    local = np.sqrt(np.maximum(p, 0.0))
+    return C / np.maximum(local, floor_ratio * local.max() + 1e-10)
+
+
+def compute_salience(C_lin, N_BINS, BPO, K):
     C_white = whiten(C_lin)
 
+    offsets = BPO * np.log2(np.arange(1, K + 1))  # offsets en bins
+    weights = 1.0 / np.arange(1, K + 1)  # poids harmoniques => patch erreurs octave
 
-    # saillances => quelle note jouer à instant T
-    offsets = BPO * np.log2(np.arange(1, K + 1))    # offsets en bins
-    weights = 1.0 / np.arange(1, K + 1)     # poids harmoniques => patch erreurs octave
-
-    cands = np.arange(0, N_BINS - int(np.ceil(offsets[-1])), 3)     # positions demi-tons
+    cands = np.arange(0, N_BINS - int(np.ceil(offsets[-1])), 3)  # positions demi-tons
 
     def salience(C):
         scores = []
@@ -151,10 +148,14 @@ def analyze_rhythm(logS, sr, HOP, S_stft):
             total = 0
             for k in range(1, K + 1):
                 p = b + BPO * np.log2(k)
-                total += (1/k) * C[int(round(p))]
+                total += (1 / k) * C[int(round(p))]
             scores.append(total / weights.sum())
         return np.array(scores)
 
+    return C_white, cands, weights, salience
+
+
+def extract_pitch(C_white, cands, salience, sr, HOP, fmin, BPO):
     t_ref = librosa.time_to_frames(20.0, sr=sr, hop_length=HOP)
     t_ref = min(t_ref, C_white.shape[1] - 1)
     print("contrôle:", cands[np.argmax(salience(C_white[:, t_ref]))])
@@ -167,16 +168,16 @@ def analyze_rhythm(logS, sr, HOP, S_stft):
     # plt.legend()
     # plt.show()
 
-    # hauteur
     pitch_bins = cands[np.argmax(S_sal, axis=0)]
     pitch_bins = median_filter(pitch_bins, size=5, mode="nearest")
     pitch_hz = fmin * 2.0 ** (pitch_bins / BPO)
     times = librosa.times_like(pitch_hz, sr=sr, hop_length=HOP)
 
-    print(f"{len(onset_times)} onsets, tempo {tempo:.1f} BPM")
+    return S_sal, pitch_bins, pitch_hz, times
 
 
-    # sonification
+def sonification_debug(pitch_hz, y, sr, HOP):
+    pass
     # f_ech = np.repeat(pitch_hz, HOP)
     # f_ech = (f_ech[:len(y)] if len(f_ech) >= len(y)
     #          else np.pad(f_ech, (0, len(y) - len(f_ech)), mode="edge"))
@@ -221,21 +222,21 @@ def build_notes(onset_frames, pitch_bins, S_sal, SEUIL, rms, rms_db, DB_SEUIL):
     midi_note = librosa.hz_to_midi(fmin * 2.0 ** (bin_note / BPO))
     midi_note = int(np.round(midi_note))
 
-
     notes = [n for n in notes if n[3] >= SEUIL]
     print(len(notes), "notes retenues")
 
+    return notes
 
-    # quantification sur la grille de temps
-    sub = 60.0 / tempo / 4          # durée d'une double-croche
-    t0 = beat_times[0]              # ancre la grille sur le 1er temps détecté
+
+def write_midi(notes, tempo, beat_times, fmin, BPO, HOP, sr, filename, music_dir, output_dir):
+    sub = 60.0 / tempo / 4  # durée d'une double-croche
+    t0 = beat_times[0]  # ancre la grille sur le 1er temps détecté
 
     def snap(t):
         return t0 + round((t - t0) / sub) * sub
 
-    # écriture
     pm = pretty_midi.PrettyMIDI(initial_tempo=tempo)
-    inst = pretty_midi.Instrument(program=56)      # 56 = Trumpet
+    inst = pretty_midi.Instrument(program=56)  # 56 = Trumpet
 
     forces = np.array([n[3] for n in notes])
     f_max = forces.max()
@@ -248,7 +249,7 @@ def build_notes(onset_frames, pitch_bins, S_sal, SEUIL, rms, rms_db, DB_SEUIL):
         end = max(snap(b * HOP / sr), start + sub)
 
         inst.notes.append(pretty_midi.Note(velocity=velocity, pitch=pitch,
-                                        start=start, end=end))
+                                            start=start, end=end))
 
     pm.instruments.append(inst)
     pm.write(output_dir / "transcription.mid")

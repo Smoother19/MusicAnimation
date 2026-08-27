@@ -4,6 +4,8 @@ from shapes import *
 from cloud import Cloud
 from fireworks import Fireworks
 from train import Train
+from rain import Rain
+from moutains import Mountains
 import random
 from smokeemitter import SmokeEmitter
 from config import *
@@ -11,6 +13,7 @@ from pathlib import Path
 import os
 from sync import SyncMusic
 from midiDecoder import decode
+from sky import Sky
 
 def draw_rails(screen, y, offset):
     ui.draw.polygon(screen, (52, 48, 44),
@@ -37,8 +40,21 @@ def gui(screen: ui.Surface, sync):
     train_x = (SCREEN_WIDTH - train.length) / 2
     scroll = 0.0
     smoke = SmokeEmitter()
+
+    curveTrack = CurvesTrack(RAIL_Y, amplitude=25, speed=100)
+    rain = Rain(SCREEN_WIDTH, SCREEN_HEIGHT, nb_drops=150)
+
+    sky = Sky(sync)
+
+    MOUNTAIN_COLORS = ((60, 70, 90), (45, 55, 75), (30, 40, 60))
+
+    mountains = Mountains((0, 300), (SCREEN_WIDTH, 300), width=8, color=(60, 70, 90), type_curve=1, a=1.5, b=2.0, amplitude=60)
+    ridge_mid = Mountains((0, 380),(SCREEN_WIDTH, 380), width=8,color=(45, 55, 75),type_curve=1,a=2.0,b=3.5,amplitude=40,bottom_y=SCREEN_HEIGHT)
+    ridge_fore = Mountains((0, 460),(SCREEN_WIDTH, 460), width=8,color=(30, 40, 60),type_curve=1,a=1.0,b=5.0,amplitude=25,bottom_y=SCREEN_HEIGHT)
+
     while RUNNING:
-        screen.fill(BACKGROUND)
+        dt = clock.tick(60) / 1000.0
+        STATS["triangles"] = 0
         dt = clock.tick(60) / 1000.0
         for event in ui.event.get():
             if event.type == ui.QUIT:
@@ -57,15 +73,22 @@ def gui(screen: ui.Surface, sync):
                     fireworks.append(fw)
 
         t = ui.mixer.music.get_pos() / 1000.0
+        started = sync.update(t) if t >= 0 else []
         if t >= 0:
-            for note in sync.update(t):
-                if note["pitch"] < 55:
+            for note in started:
+                # les feux d'artifice de nuit, les nuages de jour
+                if note["pitch"] < 55 and sky.is_night:
                     fireworks.append(Fireworks(*Fireworks.get_random_params()))
-                elif note["pitch"] > 75:
-                    clouds.append(Cloud(*Cloud.get_random_param()))
+                elif note["pitch"] > 75 and not sky.is_night:
+                    params = list(Cloud.get_random_param())
+                    params[2] = sky.tint((255, 255, 255), 0.45)  # nuages teintes par l'heure
+                    clouds.append(Cloud(*params))
 
             target = SPEED * sync.speed_factor(t)
             train.speed += (target - train.speed) * min(1.0, dt * 0.8)
+
+        sky.update(dt, t, started)
+        sky.draw(screen)
                 
        
         STATS["triangles"] = 0
@@ -75,7 +98,7 @@ def gui(screen: ui.Surface, sync):
             clouds_left = []
             for cloud in clouds:
                 cloud.draw(screen)
-                cloud.moving_cloud()
+                cloud.moving_cloud(train.speed/16)
                 
                 #Add to temp list the non valid clouds
                 if not cloud.is_out_of_screen(SCREEN_WIDTH):
@@ -83,6 +106,12 @@ def gui(screen: ui.Surface, sync):
             
             #Update clouds list 
             clouds = clouds_left
+
+
+        #Draw the mountains, teintees par l'heure du jour
+        for ridge, base_color in zip((mountains, ridge_mid, ridge_fore), MOUNTAIN_COLORS):
+            ridge.color = sky.tint(base_color)
+            ridge.draw(screen)
         
         if fireworks:
             fireworks_left = []
@@ -97,14 +126,24 @@ def gui(screen: ui.Surface, sync):
 
         #Update clouds list
         clouds = clouds_left
+        curveTrack.update(dt)
         train.update(dt)
+
+        #Update the rain animation
+        rain.update(dt)
+        rain.draw(screen)
+
+        y_center, angle = curveTrack.get_info_track(train_x, train.length)
+        pivot = (train_x + train.length / 2, RAIL_Y)
+
         sx, sy = train.smoke_position(train_x, 0)
         smoke.update(dt, sx, sy, wind=train.speed)
         scroll -= train.speed * dt
         
-        draw_rails(screen, RAIL_Y, scroll)
-        smoke.draw(screen)
-        train.draw(screen, train_x, 0)
+        #draw_rails(screen, RAIL_Y, scroll)
+        curveTrack.draw(screen)
+        smoke.draw(screen, oy=y_center)
+        train.draw(screen, ox=train_x, oy=0, angle=angle, pivot=pivot, track=curveTrack)
         ui.display.flip()
 
         frame += 1
