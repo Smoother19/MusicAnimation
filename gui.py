@@ -15,6 +15,7 @@ import os
 from sync import SyncMusic
 from midiDecoder import decode
 from sky import Sky
+from birds import *
 
 def draw_rails(screen, y, offset):
     ui.draw.polygon(screen, (52, 48, 44),
@@ -45,6 +46,7 @@ def gui(screen: ui.Surface, sync):
     curveTrack = CurvesTrack(RAIL_Y, amplitude=25)
 
     sky = Sky(sync)
+    birds = Birds(sync)
 
     mg_season = Season(SKY_CYCLES_PER_TRACK)
 
@@ -92,7 +94,12 @@ def gui(screen: ui.Surface, sync):
             train.speed += (target - train.speed) * min(1.0, dt * 0.8)
 
         sky.update(dt, t, started)
+        birds.update(dt, t, started, sky, train.speed)
+
+
         sky.draw(screen)
+        birds.draw(screen, PLANE_FAR)
+                
        
         STATS["triangles"] = 0
         clouds_left = []
@@ -113,6 +120,10 @@ def gui(screen: ui.Surface, sync):
 
         #Draw the mountains, teintees par l'heure du jour
         for ridge, base_color in zip((mountains, ridge_mid, ridge_fore), MOUNTAIN_COLORS):
+            ridge.color = sky.tint(base_color)
+            ridge.draw(screen)
+
+        birds.draw(screen, PLANE_MID) 
             ridge.draw(screen, sky)
 
         # 2. Mise à jour du défilement avec effet de Parallaxe (vitesses différentes)
@@ -151,6 +162,7 @@ def gui(screen: ui.Surface, sync):
         smoke.draw(screen, oy=y_center)
         train.draw(screen, ox=train_x, oy=0, angle=angle, pivot=pivot, track=curveTrack)
         ui.display.flip()
+        birds.draw(screen, PLANE_NEAR)
 
         frame += 1
         if frame % 30 == 0:
