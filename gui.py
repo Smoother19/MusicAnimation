@@ -54,6 +54,8 @@ def gui(screen: ui.Surface, sync):
     ridge_mid = Mountains((0, 380),(SCREEN_WIDTH, 380), width=8,color=(45, 55, 75),type_curve=1,a=2.0,b=3.5,amplitude=40,bottom_y=SCREEN_HEIGHT)
     ridge_fore = Mountains((0, 460),(SCREEN_WIDTH, 460), width=8,color=(30, 40, 60),type_curve=1,a=1.0,b=5.0,amplitude=25,bottom_y=SCREEN_HEIGHT)
 
+    mountain_chains = [mountains, ridge_mid, ridge_fore]
+
     while RUNNING:
         dt = clock.tick(60) / 1000.0
         STATS["triangles"] = 0
@@ -111,8 +113,7 @@ def gui(screen: ui.Surface, sync):
 
         #Draw the mountains, teintees par l'heure du jour
         for ridge, base_color in zip((mountains, ridge_mid, ridge_fore), MOUNTAIN_COLORS):
-            ridge.color = sky.tint(base_color)
-            ridge.draw(screen)
+            ridge.draw(screen, sky)
 
         # 2. Mise à jour du défilement avec effet de Parallaxe (vitesses différentes)
         mountains.update(dt, train.speed * 0.2)   # Montagnes de fond (très lentes)
@@ -120,7 +121,7 @@ def gui(screen: ui.Surface, sync):
         ridge_fore.update(dt, train.speed * 0.8)  # Collines de devant (plus rapides)
 
         #Update the season's managment
-        mg_season.update(dt, sky.total_phases, screen)
+        mg_season.update(dt, sky.total_phases, screen, mountain_chains)
         
         if fireworks:
             fireworks_left = []

@@ -97,7 +97,15 @@ class Mountains():
             new_chunk, _ = self.create_chunk(start_x, start_y)
             self.chunks.append(new_chunk)
 
-    def draw(self, screen, ox=0, oy=0, angle=0 ,pivot= None):
+    def change_color(self, color):
+         self.color = color
+
+    def draw(self, screen, ox=0, oy=0, sky=None, angle=0 ,pivot= None):
         for chunk in self.chunks:
-            chunk.color = self.color
+
+            if sky:
+                 chunk.color = sky.tint(self.color)
+            else:
+                 chunk.color = self.color
+                 
             chunk.draw(screen, ox=-self.scroll, oy=0)
