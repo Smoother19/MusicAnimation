@@ -42,3 +42,50 @@ NIGHT_BOTTOM = (30, 33, 66)
 DUSK_TOP = (62, 44, 100)
 DUSK_BOTTOM = (240, 128, 78)
 AMBIENT_NIGHT = (14, 16, 34)         # teinte vers laquelle Sky.tint() ramene la scene
+
+
+"""Shared settings for the transcription pipeline."""
+
+import numpy as np
+
+SR = 44100
+
+# Long window: frequency resolution, used for pitch detection.
+N_FFT = 8192
+HOP = 2048
+BIN = SR / N_FFT
+
+# Short window: time resolution, used for envelope and vibrato.
+N_ENV = 1024
+HOP_ENV = 256
+BIN_ENV = SR / N_ENV
+FS_ENV = SR / HOP_ENV
+
+# Multi-pitch engine.
+N_PARTIALS = 12
+ALPHA, BETA = 52.0, 320.0       # Klapuri salience weighting
+MAX_NOTES = 3
+SALIENCE_THRESHOLD = 0.15       # relative to the first pitch found
+CANCEL_FACTOR = 0.9
+
+# Note segmentation.
+SILENCE_THRESHOLD = 0.005       # RMS
+MIN_FRAMES = 3                  # ~140 ms
+GAP_TOLERANCE = 1               # frames
+MIDI_MIN, MIDI_MAX = 40, 76     # E2 - E5
+
+# Piano / trumpet classification.
+VIBRATO_THRESHOLD = 0.0821      # calibrated on the separated tracks
+TRANSITION_WIDTH = 0.04
+LOW_PITCH_LIMIT = 52            # below this, a trumpet cannot play
+SCORE_NO_VIBRATO = -0.3
+
+MIDI_PROGRAMS = {"piano": 0, "trumpet": 56}
+
+
+def midi_to_hz(p):
+    return 440.0 * 2.0 ** ((p - 69) / 12.0)
+
+
+def hz_to_midi(f):
+    return int(round(69 + 12 * np.log2(f / 440.0)))
