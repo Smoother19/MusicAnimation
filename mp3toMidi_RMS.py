@@ -185,7 +185,8 @@ def find_instrument(rms_segment):
         return "piano"
 
     peak_idx = np.argmax(rms_segment)
-    decay = rms_segment[peak_idx + 10]
+    decay_idx = min(peak_idx + 10, len(rms_segment) - 1)
+    decay = rms_segment[decay_idx]
 
     diff = rms_segment[peak_idx] - decay
     diff_int = int(diff * 1000)
