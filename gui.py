@@ -124,7 +124,7 @@ def gui(screen: ui.Surface, sync):
             ridge.draw(screen)
 
         birds.draw(screen, PLANE_MID) 
-            ridge.draw(screen, sky)
+        ridge.draw(screen, sky)
 
         # 2. Mise à jour du défilement avec effet de Parallaxe (vitesses différentes)
         mountains.update(dt, train.speed * 0.2)   # Montagnes de fond (très lentes)
