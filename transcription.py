@@ -3,11 +3,14 @@ import pretty_midi
 from config import MAX_NOTES, MIDI_PROGRAMS
 from notes import transcribe
 from instruments import measure, label, enforce_monophony
+from timing import onset_times, snap_starts, decay_ends, clip_to_next
 
-
-def analyze(path, max_notes=MAX_NOTES, classify=True):
-    """Transcribe a file and return its notes, labelled by instrument."""
+def analyze(path, max_notes=MAX_NOTES, classify=True, refine_timing=True):
     y, notes = transcribe(path, max_notes)
+
+    if refine_timing:
+        decay_ends(y, notes, ratio=0.15)
+        clip_to_next(notes)
 
     if classify:
         measure(y, notes)
@@ -22,7 +25,7 @@ def write_midi(notes, path):
 
     Returns the note count per track.
     """
-    out = pretty_midi.PrettyMIDI()
+    out = pretty_midi.PrettyMIDI(resolution=600)
     tracks = {}
 
     for note in notes:

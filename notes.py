@@ -13,6 +13,7 @@ class Note:
     """A detected note. Times are in frames; use seconds() to convert.
 
     slope, vibrato and instrument are filled in by the instruments module.
+    start_s and end_s are set by the timing module when available.
     """
     midi: int
     start: int
@@ -20,6 +21,8 @@ class Note:
     slope: float | None = None
     vibrato: float | None = None
     instrument: str | None = None
+    start_s: float | None = None
+    end_s: float | None = None
 
     @property
     def duration(self):
@@ -30,7 +33,9 @@ class Note:
         return midi_to_hz(self.midi)
 
     def seconds(self):
-        return self.start * HOP / SR, self.end * HOP / SR
+        start = self.start_s if self.start_s is not None else self.start * HOP / SR
+        end = self.end_s if self.end_s is not None else self.end * HOP / SR
+        return start, end
 
 
 def _pitches_per_frame(y, max_notes):
