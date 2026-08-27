@@ -53,7 +53,7 @@ def decode(audio_path, midi_path=None):
 
 
 if __name__ == "__main__":
-    AUDIO = "./sounds/Ecossaise_Both.mp3"
+    AUDIO = "./sounds/PinkPanther_Both.mp3"
     OUTPUT = "transcription_2tracks.mid"
 
     notes = analyze(AUDIO)

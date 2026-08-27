@@ -6,6 +6,11 @@ import pretty_midi as pm
 from scipy.ndimage import uniform_filter1d, median_filter
 import matplotlib.pyplot as plt
 
+
+SLOPE_THRESHOLD = -3.0      # nepers/s: above this the sound is sustained
+MIN_TAIL = 15               # frames needed for a reliable fit
+TAIL_FRAMES = 50            # ~290 ms at hop 256
+
 music_dir = Path("sounds")
 output_dir = Path("output")
 
@@ -182,24 +187,28 @@ def create_segments(peak_pick,rms,y,sr,hop_length,S_stft,decay_times):
 
     return segments
 
-def find_instrument(rms_segment):
-    # Segment trop court pour être analysé fiablement. Difficile d'avoir une note courte à la trompette, donc probablement du piano
-    if len(rms_segment) < 10:
-        return "piano"
 
-    peak_idx = np.argmax(rms_segment)
-    decay_idx = min(peak_idx + 10, len(rms_segment) - 1)
-    decay = rms_segment[decay_idx]
+def find_instrument(rms_segment, sr=44100, hop=256):
+    """Classify a segment from the decay rate of its RMS envelope.
 
-    diff = rms_segment[peak_idx] - decay
-    diff_int = int(diff * 1000)
+    Returns "piano", "trompette", or None when the segment is too short
+    to decide.
 
-    #print(diff_int)
+    The slope is fitted on the log envelope, so it measures a ratio and
+    stays independent of the recording level. It is expressed per second,
+    so it does not depend on the hop size either.
+    """
+    peak = int(np.argmax(rms_segment))
+    tail = rms_segment[peak:peak + TAIL_FRAMES]
+    tail = tail[tail > 1e-6]
 
-    if diff_int < 40:
-        return "trompette"
-    else:
-        return "piano"
+    if len(tail) < MIN_TAIL:
+        return None
+
+    t = np.arange(len(tail)) * hop / sr
+    slope = np.polyfit(t, np.log(tail / tail[0]), 1)[0]
+
+    return "trompette" if slope > SLOPE_THRESHOLD else "piano"
         
 def get_midi_note(y_segment, sr, stft):
     f0, voiced_flag, voiced_prob = lr.pyin(
