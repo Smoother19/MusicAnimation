@@ -3,7 +3,7 @@ import gui
 import midiDecoder
 import mp3toMidi_RMS
 
-inputfile = "song.mp3"
+inputfile = "PinkPanther_Piano_Only.mp3"
 
 def main() :
     #isMidi = mp3toMidi.decode(inputfile)
