@@ -6,6 +6,7 @@ from fireworks import Fireworks
 from train import Train
 from rain import Rain
 from moutains import Mountains
+from season import Season
 import random
 from smokeemitter import SmokeEmitter
 from config import *
@@ -42,9 +43,10 @@ def gui(screen: ui.Surface, sync):
     smoke = SmokeEmitter()
 
     curveTrack = CurvesTrack(RAIL_Y, amplitude=25)
-    rain = Rain(SCREEN_WIDTH, SCREEN_HEIGHT, nb_drops=150)
 
     sky = Sky(sync)
+
+    mg_season = Season(SKY_CYCLES_PER_TRACK)
 
     MOUNTAIN_COLORS = ((60, 70, 90), (45, 55, 75), (30, 40, 60))
 
@@ -89,7 +91,6 @@ def gui(screen: ui.Surface, sync):
 
         sky.update(dt, t, started)
         sky.draw(screen)
-                
        
         STATS["triangles"] = 0
         clouds_left = []
@@ -117,6 +118,9 @@ def gui(screen: ui.Surface, sync):
         mountains.update(dt, train.speed * 0.2)   # Montagnes de fond (très lentes)
         ridge_mid.update(dt, train.speed * 0.5)   # Collines du milieu (vitesse moyenne)
         ridge_fore.update(dt, train.speed * 0.8)  # Collines de devant (plus rapides)
+
+        #Update the season's managment
+        mg_season.update(dt, sky.total_phases, screen)
         
         if fireworks:
             fireworks_left = []
@@ -133,10 +137,6 @@ def gui(screen: ui.Surface, sync):
         clouds = clouds_left
         curveTrack.update(dt, train.speed * 1.5)
         train.update(dt)
-
-        #Update the rain animation
-        rain.update(dt)
-        rain.draw(screen)
 
         y_center, angle = curveTrack.get_info_track(train_x, train.length)
         pivot = (train_x + train.length / 2, RAIL_Y)

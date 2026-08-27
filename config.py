@@ -16,7 +16,7 @@ SKY_RADIUS_X = SCREEN_WIDTH * 0.45   # demi-largeur de la course des astres
 SKY_RADIUS_Y = 400                   # hauteur max des astres au-dessus de l'horizon
 
 CYCLE_DURATION = 24.0                # secondes de musique pour un cycle (si duree inconnue)
-SKY_CYCLES_PER_TRACK = 2             # nb de cycles complets sur un morceau
+SKY_CYCLES_PER_TRACK = 4             # nb de cycles complets sur un morceau
 SKY_START_PHASE = 0.10               # on demarre juste apres le lever du soleil
 SKY_BANDS = 24                       # nb de bandes du degrade de ciel
 SKY_NB_STARS = 70

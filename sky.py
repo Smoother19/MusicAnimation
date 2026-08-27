@@ -173,6 +173,8 @@ class Sky:
         self.sync = sync
         self.reactive = reactive
 
+        self.total_phases = 0.0 #count the total cycles
+
         if cycle_duration is None:
             duration = getattr(sync, "duration", 0.0)
             cycle_duration = duration / cycles if duration > 1.0 else CYCLE_DURATION
@@ -212,7 +214,9 @@ class Sky:
             dt_music, factor = dt, 1.0
 
         # la musique dense accelere la course du soleil
-        self.phase = (self.phase + dt_music / self.cycle_duration * factor) % 1.0
+        delta_phase = dt_music / self.cycle_duration * factor
+        self.phase = (self.phase + delta_phase) % 1.0
+        self.total_phases += delta_phase
         self.sun.set_phase(self.phase)
         self.moon.set_phase(self.phase + 0.5)
 
