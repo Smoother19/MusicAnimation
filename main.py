@@ -1,5 +1,4 @@
 import mp3toMidi
-import mp3toAprèsMidi
 import gui
 import midiDecoder
 import mp3toMidi_RMS

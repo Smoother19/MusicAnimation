@@ -82,6 +82,11 @@ def onsetDetection(y,rms,times,sr,S_stft):
 
     peak_pick = lr.util.peak_pick(x=onset_env,pre_max=12, post_max=12, pre_avg=12, post_avg=15, delta=2, wait=10, method="dp_value")
 
+    decay_times = []
+    for peak in peak_pick:
+        decay_time = (find_decay_time(rms, peak, sr, hop_length, ratio=0.6))
+        decay_times.append(decay_time)
+
     fig, ax = plt.subplots(nrows=2, sharex=True, height_ratios=(3, 1))
 
     lr.display.waveshow(y=y, sr=sr, ax=ax[1], label="Waveform")
@@ -120,10 +125,20 @@ def onsetDetection(y,rms,times,sr,S_stft):
     plt.savefig(output_dir / "RMS_peak")
     plt.close()
 
-    return onset_frames, onset_times, onset_detect, peak_pick
+    return onset_frames, onset_times, onset_detect, peak_pick, decay_times
+
+def find_decay_time(rms, peak_idx, sr, hop_length, ratio=0.6):
+    threshold = ratio * rms[peak_idx]
+    nbre_frames_rms = len(rms)
+
+    for i in range(peak_idx + 1, nbre_frames_rms):
+        if rms[i] < threshold:
+            return i * hop_length / sr
+
+    return (nbre_frames_rms - 1) * hop_length / sr
 
 
-def create_segments(peak_pick,rms,y,sr,hop_length,S_stft):
+def create_segments(peak_pick,rms,y,sr,hop_length,S_stft,decay_times):
     segments = []
     nbre_frames_rms = len(rms)
     nbre_peaks = len(peak_pick)
@@ -144,7 +159,7 @@ def create_segments(peak_pick,rms,y,sr,hop_length,S_stft):
         y_segment = y[start_sample:end_sample]
 
         start_time = start_frame * hop_length / sr
-        end_time = end_frame * hop_length / sr
+        end_time = decay_times[i]
 
         midi_note = get_midi_note(y_segment=y_segment,sr=sr, stft=S_stft)
 
@@ -216,7 +231,7 @@ def hz_to_midi_note(pitch_hz):
     return midi_note
 
 def generate_midi(segments):
-    midi = pm.PrettyMIDI()
+    midi = pm.PrettyMIDI(resolution=480)
 
     piano_track = pm.Instrument(program=0, name="Piano")
     trumpet_track = pm.Instrument(program=56, name="Trompette")
@@ -254,8 +269,8 @@ def decode(filename: str):
     y, sr, duration = load_audio(filename, music_dir)
     S_stft = stft_calculation(y,sr)
     rms, times = rms_calculation(y,sr,S_stft)
-    onset_frames, onset_times, onset_detect, peak_pick = onsetDetection(y,rms,times,sr,S_stft)
-    segments = create_segments(peak_pick,rms,y,sr,hop_length,S_stft)
+    onset_frames, onset_times, onset_detect, peak_pick, decay_times = onsetDetection(y,rms,times,sr,S_stft)
+    segments = create_segments(peak_pick,rms,y,sr,hop_length,S_stft,decay_times)
     '''
     for segment in segments:
     print(segment["instrument"])
