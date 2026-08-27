@@ -163,7 +163,10 @@ def create_segments(peak_pick,rms,y,sr,hop_length,S_stft,decay_times):
 
         midi_note = get_midi_note(y_segment=y_segment,sr=sr, stft=S_stft)
 
-        english_note = lr.midi_to_note(midi_note)
+        if midi_note is None:
+            english_note = None
+        else:
+            english_note = lr.midi_to_note(midi_note)
 
         segments.append({
             "start_frame": start_frame,
@@ -228,8 +231,12 @@ def get_midi_note(y_segment, sr, stft):
     return midi_note
 
 def hz_to_midi_note(pitch_hz):
-    midi_note = int(round(lr.hz_to_midi(pitch_hz)))
-    return midi_note
+    mn = lr.hz_to_midi(pitch_hz)
+    if np.isnan(mn):
+        return None
+    else:
+        midi_note = int(round(mn))
+        return midi_note
 
 def generate_midi(segments):
     midi = pm.PrettyMIDI(resolution=480)
@@ -238,6 +245,9 @@ def generate_midi(segments):
     trumpet_track = pm.Instrument(program=56, name="Trompette")
 
     for seg in segments: 
+        if seg["midi_note"] is None:
+            continue
+        
         note = pm.Note(
             velocity=100,
             pitch=seg["midi_note"],
