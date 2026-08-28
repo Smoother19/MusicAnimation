@@ -32,7 +32,7 @@ class Snow():
         #Create the flake's own layer for performance
         self.based = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
 
-        rand_branch = 6#random.randint(4, 6)
+        rand_branch = random.randint(5, 7)
         self.derive_snowflake(rand_branch)
 
 
