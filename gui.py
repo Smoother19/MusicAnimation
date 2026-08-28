@@ -6,6 +6,7 @@ from fireworks import Fireworks
 from train import Train
 from rain import Rain
 from moutains import Mountains
+from season import Season
 import random
 from smokeemitter import SmokeEmitter
 from config import *
@@ -14,6 +15,7 @@ import os
 from sync import SyncMusic
 from midiDecoder import decode
 from sky import Sky
+from birds import *
 
 def draw_rails(screen, y, offset):
     ui.draw.polygon(screen, (52, 48, 44),
@@ -41,16 +43,20 @@ def gui(screen: ui.Surface, sync):
     scroll = 0.0
     smoke = SmokeEmitter()
 
-    curveTrack = CurvesTrack(RAIL_Y, amplitude=25, speed=100)
-    rain = Rain(SCREEN_WIDTH, SCREEN_HEIGHT, nb_drops=150)
+    curveTrack = CurvesTrack(RAIL_Y, amplitude=25)
 
     sky = Sky(sync)
+    birds = Birds(sync)
+
+    mg_season = Season(SKY_CYCLES_PER_TRACK)
 
     MOUNTAIN_COLORS = ((60, 70, 90), (45, 55, 75), (30, 40, 60))
 
     mountains = Mountains((0, 300), (SCREEN_WIDTH, 300), width=8, color=(60, 70, 90), type_curve=1, a=1.5, b=2.0, amplitude=60)
     ridge_mid = Mountains((0, 380),(SCREEN_WIDTH, 380), width=8,color=(45, 55, 75),type_curve=1,a=2.0,b=3.5,amplitude=40,bottom_y=SCREEN_HEIGHT)
     ridge_fore = Mountains((0, 460),(SCREEN_WIDTH, 460), width=8,color=(30, 40, 60),type_curve=1,a=1.0,b=5.0,amplitude=25,bottom_y=SCREEN_HEIGHT)
+
+    mountain_chains = [mountains, ridge_mid, ridge_fore]
 
     while RUNNING:
         dt = clock.tick(60) / 1000.0
@@ -88,7 +94,11 @@ def gui(screen: ui.Surface, sync):
             train.speed += (target - train.speed) * min(1.0, dt * 0.8)
 
         sky.update(dt, t, started)
+        birds.update(dt, t, started, sky, train.speed)
+
+
         sky.draw(screen)
+        birds.draw(screen, PLANE_FAR)
                 
        
         STATS["triangles"] = 0
@@ -107,11 +117,20 @@ def gui(screen: ui.Surface, sync):
             #Update clouds list 
             clouds = clouds_left
 
+        mountains.update(dt, train.speed * 0.2)
+        ridge_mid.update(dt, train.speed * 0.5)
+        ridge_fore.update(dt, train.speed * 0.8)
 
         #Draw the mountains, teintees par l'heure du jour
-        for ridge, base_color in zip((mountains, ridge_mid, ridge_fore), MOUNTAIN_COLORS):
-            ridge.color = sky.tint(base_color)
-            ridge.draw(screen)
+        for ridge in mountain_chains:
+            ridge.draw(screen, sky)
+
+        ridge.draw(screen, sky)
+        
+        birds.draw(screen, PLANE_MID) 
+
+        #Update the season's managment
+        mg_season.update(dt, sky.total_phases, screen, mountain_chains)
         
         if fireworks:
             fireworks_left = []
@@ -126,12 +145,8 @@ def gui(screen: ui.Surface, sync):
 
         #Update clouds list
         clouds = clouds_left
-        curveTrack.update(dt)
+        curveTrack.update(dt, train.speed * 1.5)
         train.update(dt)
-
-        #Update the rain animation
-        rain.update(dt)
-        rain.draw(screen)
 
         y_center, angle = curveTrack.get_info_track(train_x, train.length)
         pivot = (train_x + train.length / 2, RAIL_Y)
@@ -145,6 +160,7 @@ def gui(screen: ui.Surface, sync):
         smoke.draw(screen, oy=y_center)
         train.draw(screen, ox=train_x, oy=0, angle=angle, pivot=pivot, track=curveTrack)
         ui.display.flip()
+        birds.draw(screen, PLANE_NEAR)
 
         frame += 1
         if frame % 30 == 0:

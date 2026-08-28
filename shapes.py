@@ -203,16 +203,16 @@ class Curve(TriangularShape):
         return triangles
 
 class CurvesTrack():
-    def __init__(self, y_base, chunk_length=400, amplitude=100, speed=100):
+    def __init__(self, y_base, chunk_length=400, amplitude=100):
         '''
         Create a track of multiple curves
         '''
         self.y_base = y_base
         self.chunk_length = chunk_length
         self.amplitude = amplitude
-        self.speed = speed
         self.scroll = 0.0
         self.chunks = []
+        self.half = 1
 
         x = 0
         last_y = y_base
@@ -272,7 +272,12 @@ class CurvesTrack():
         end_y = self.y_base
         type_curve, a, b, c = Curve.get_random_params()
 
-        chunk = Curve((start_x, start_y), (end_x, end_y), 8, (52, 48, 44), type_curve, a, b, c, amplitude=self.amplitude)
+        if self.half % 2 == 0:
+            chunk = Curve((start_x, start_y), (end_x, end_y), 8, (52, 48, 44), type_curve, a, b, c, amplitude=self.amplitude)
+        else:
+            chunk = Curve((start_x, start_y), (end_x, end_y), 8, (107, 103, 92), type_curve, a, b, c, amplitude=self.amplitude)
+        self.half += 1
+        
         return chunk, end_y
 
     def _left_point(self, chunk):
@@ -281,8 +286,8 @@ class CurvesTrack():
         else:
             return chunk.point_at(1.0)
 
-    def update(self, dt):
-        self.scroll += self.speed * dt  # sens inversé
+    def update(self, dt, speed):
+        self.scroll += speed * dt  # sens inversé
 
         last = self.chunks[-1]
         left_x = min(last.p_start[0], last.p_end[0]) + self.scroll  # bord gauche du dernier chunk
@@ -352,6 +357,7 @@ class Group(TriangularShape):
     def __init__(self, x=0, y=0):
         super().__init__(x, y, 0, 0, (0, 0, 0))
         self.children = []
+        self.scroll = 0.0
  
     def add(self, *shapes):
         self.children.extend(shapes)
