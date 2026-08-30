@@ -80,16 +80,27 @@ def gui(screen: ui.Surface, sync):
 
         t = ui.mixer.music.get_pos() / 1000.0
         started = sync.update(t) if t >= 0 else []
-        if t >= 0:
-            for note in started:
-                # les feux d'artifice de nuit, les nuages de jour
-                if note["pitch"] < 55 and sky.is_night:
-                    fireworks.append(Fireworks(*Fireworks.get_random_params()))
-                elif note["pitch"] > 75 and not sky.is_night:
-                    params = list(Cloud.get_random_param())
-                    params[2] = sky.tint((255, 255, 255), 0.45)  # nuages teintes par l'heure
-                    clouds.append(Cloud(*params))
+        
+        # Initialisation des chronomètres anti-spam si ce n'est pas déjà fait
+        if not hasattr(gui, "last_firework_time"):
+            gui.last_firework_time = 0.0
+        if not hasattr(gui, "last_cloud_time"):
+            gui.last_cloud_time = 0.0
 
+        if t >= 0:
+            # 1. Le Piano déclenche les feux d'artifice (N'importe quand)
+            if sync.check_piano_trigger(t) and (t - gui.last_firework_time > 0.4):
+                fireworks.append(Fireworks(*Fireworks.get_random_params()))
+                gui.last_firework_time = t  
+                
+            # 2. La Trompette déclenche l'apparition de nuages (N'importe quand)
+            if sync.check_trumpet_trigger(t) and (t - gui.last_cloud_time > 0.8):
+                params = list(Cloud.get_random_param())
+                params[2] = sky.tint((255, 255, 255), 0.45)  
+                clouds.append(Cloud(*params))
+                gui.last_cloud_time = t  
+
+            # Gestion de la vitesse du train avec la densité globale
             target = SPEED * sync.speed_factor(t)
             train.speed += (target - train.speed) * min(1.0, dt * 0.8)
 
