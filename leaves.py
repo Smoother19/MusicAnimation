@@ -50,7 +50,6 @@ class Leaf(TriangularShape):
             elif char == '-':
                 angle -= math.radians(72)
 
-
         min_x = min(p[0] for p in points)
         max_x = max(p[0] for p in points)
         min_y = min(p[1] for p in points)

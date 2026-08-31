@@ -45,7 +45,8 @@ class Snow():
         radius_max = self.size / 2
         inital_len = radius_max * 0.45
 
-        branch_structure = self.derive_branch(inital_len, depth=3) #we want the flake to be 2x smaller and we assure the decoration with -2
+        depth = random.randint(2, 5)
+        branch_structure = self.derive_branch(inital_len, depth) #we want the flake to be 2x smaller and we assure the decoration with -2
 
         angle_separation = (math.pi * 2) / n_branch
 
@@ -71,7 +72,7 @@ class Snow():
     def derive_branch(self, length, depth):
         '''
         Third rule: <Branch> -> <Segment> + <Branch>
-        Fourth rule : <Segment> -> <Line> + <Decoration>
+        Fourth rule : <Segment> -> <Line> + <Decoration>  <Line> = length
         '''
         if depth == 0 or length < 2:
             return []
