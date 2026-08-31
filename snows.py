@@ -21,7 +21,7 @@ class Snow():
         self.x = self.base_x
         self.y = y
 
-        self.size = random.randint(16, 26)  #size of the flake
+        self.size = random.randint(20, 30)  #size of the flake
         self.speed_y = random.uniform(20, 60) #falling speed
         self.speed_x = random.uniform(0.5, 1.5) #horizontal speed
         self.sway_amount = random.uniform(15, 40)
