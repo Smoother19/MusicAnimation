@@ -178,19 +178,19 @@ class Constellation:
             self.lines.append((current_star, next_star))
             used_stars.add(next_star)
 
-            if random.random() < 0.7: #30% of chance to create
+            if random.random() < 0.85: #85% of chance to create a line
                 current_star = next_star
             else:
                 current_star = random.choice(list(used_stars))
 
     def draw_at(self, screen, night, sky_color):
-        if night < 0.05:
+        if night < 0.6:
             return
 
-        line_brigthness = night * 0.3
-        line_color = lerp_color(sky_color, (255, 255, 255), line_brigthness)
+        line_brightness = (night - 0.6) * 0.4
+        line_color = lerp_color(sky_color, (255, 255, 255), line_brightness)
 
-        thickness = 2.0 
+        thickness = 0.8
         hw = thickness / 2.0
 
         for star_a, star_b in self.lines:

@@ -56,7 +56,7 @@ class SyncMusic():
         trumpet.sort(key=lambda n: n["start"])
         
         # Ce print va t'aider à voir si ton mp3toMidi a bien détecté des notes aiguës !
-        print(f"🎵 DIAGNOSTIC : {len(piano)} notes de Piano (<60) | {len(trumpet)} notes de Trompette (>=60)")
+        #print(f"🎵 DIAGNOSTIC : {len(piano)} notes de Piano (<60) | {len(trumpet)} notes de Trompette (>=60)")
         
         return all_notes, piano, trumpet
 
