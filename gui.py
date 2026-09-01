@@ -18,17 +18,13 @@ from midiDecoder import decode
 from sky import Sky
 from birds import *
 
-# Magenta -> cyan plutot que orange -> bleu : les feuilles d'automne, la
-# pluie et la neige occupent deja l'orange, le jaune et le blanc.
-NOTE_LOW = (255, 90, 170)      # grave
-NOTE_HIGH = (110, 230, 255)    # aigu
+
+NOTE_LOW = (255, 90, 170)
+NOTE_HIGH = (110, 230, 255)
 MAX_CLOUDS = 10
 MAX_FIREWORKS = 10
-
-# Quel instrument recoit les feux d'artifice. La melodie par defaut : elle
-# ne fait que 173 des 716 notes, donc elle tient dans le budget d'images,
-# et c'est elle qu'on suit a l'oreille. Mettre "piano" ici rend la main a
-# l'accompagnement, au prix mesure de 31 a 19 images par seconde.
+NOTE_Y_LOW = 300
+NOTE_Y_HIGH = 80
 ACCENT = "trumpet"
 
 
@@ -48,7 +44,6 @@ def draw_shapes(screen, shapes):
 
 
 def note_color(ratio):
-    'Du chaud au froid selon la hauteur : la couleur seule situe la note.'
     return tuple(int(a + (b - a) * ratio) for a, b in zip(NOTE_LOW, NOTE_HIGH))
 
 
@@ -57,24 +52,12 @@ def dim(color, k):
 
 
 def spawn_note(note, sync, sky, fireworks, markers, clouds):
-    '''
-    Un visuel par note, place en hauteur selon sa hauteur reelle.
-
-    Deux couches. Le marqueur, toujours, garantit que toutes les notes se
-    voient : avec les anciens seuils absolus et leur conditionnement au
-    jour et a la nuit, 18 % seulement mettaient quelque chose a l'ecran.
-    L'accent par-dessus dit l'instrument, et il est plafonne en nombre
-    plutot que bride au chronometre, pour ne jamais rater une note faute
-    d'avoir attendu assez longtemps.
-    '''
     r = sync.ratio(note)
-    y = RAIL_Y - 40 - r * (RAIL_Y - 160)
+    y = NOTE_Y_LOW - r * (NOTE_Y_LOW - NOTE_Y_HIGH)
     color = note_color(r)
 
     if note["instrument"] == ACCENT:
-        # La melodie reste au centre : les notes s'empilent et le contour
-        # melodique se lit verticalement.
-        x = SCREEN_WIDTH / 2 + random.uniform(-140, 140)
+        x = random.uniform(90, SCREEN_WIDTH - 90)
         if len(fireworks) < MAX_FIREWORKS:
             fireworks.append(Fireworks(x, y, color, nb_rays=14,
                                        max_speed=5 + 5 * r,
@@ -82,16 +65,12 @@ def spawn_note(note, sync, sky, fireworks, markers, clouds):
             return
     else:
         x = random.uniform(60, SCREEN_WIDTH - 60)
-        # Les nuages restent diurnes : de nuit ce sont des ellipses grises
-        # posees dans le ciel etoile.
         if r > 0.85 and not sky.is_night and len(clouds) < MAX_CLOUDS:
             params = list(Cloud.get_random_param())
             params[1] = (x, y)
             params[2] = sky.tint((255, 255, 255), 0.45)
             clouds.append(Cloud(*params))
 
-    # Le marqueur s'eteint vers sa propre teinte assombrie, pas vers le
-    # fond : fondu au fond il disparait en trois images.
     markers.append(Particle(x, y, color, fade_to=dim(color, 0.25),
                             lifetime=max(0.45, min(1.6, note["duration"])),
                             size=14 + 22 * (1 - r)))
@@ -110,7 +89,7 @@ def gui(screen: ui.Surface, sync):
     scroll = 0.0
     smoke = SmokeEmitter()
 
-    curveTrack = CurvesTrack(RAIL_Y, amplitude=25)
+    curveTrack = CurvesTrack(500, sync, span=380)
 
     sky = Sky(sync)
     birds = Birds(sync)
@@ -119,16 +98,13 @@ def gui(screen: ui.Surface, sync):
 
     MOUNTAIN_COLORS = ((60, 70, 90), (45, 55, 75), (30, 40, 60))
 
-    mountains = Mountains((0, 300), (SCREEN_WIDTH, 300), width=8, color=(60, 70, 90), type_curve=1, a=1.5, b=2.0, amplitude=60)
-    ridge_mid = Mountains((0, 380),(SCREEN_WIDTH, 380), width=8,color=(45, 55, 75),type_curve=1,a=2.0,b=3.5,amplitude=40,bottom_y=SCREEN_HEIGHT)
-    ridge_fore = Mountains((0, 460),(SCREEN_WIDTH, 460), width=8,color=(30, 40, 60),type_curve=1,a=1.0,b=5.0,amplitude=25,bottom_y=SCREEN_HEIGHT)
+    mountains = Mountains((0, 300), (SCREEN_WIDTH, 300), width=8, color=(60, 70, 90), type_curve=1, a=1.5, b=2.0, amplitude=60, reactivity=32)
+    ridge_mid = Mountains((0, 380),(SCREEN_WIDTH, 380), width=8,color=(45, 55, 75),type_curve=1,a=2.0,b=3.5,amplitude=40,bottom_y=SCREEN_HEIGHT, reactivity=52)
+    ridge_fore = Mountains((0, 460),(SCREEN_WIDTH, 460), width=8,color=(30, 40, 60),type_curve=1,a=1.0,b=5.0,amplitude=25,bottom_y=SCREEN_HEIGHT, reactivity=78)
 
     mountain_chains = [mountains, ridge_mid, ridge_fore]
 
     while RUNNING:
-        # Un seul tick par image : tick() attend pour caper la boucle, donc
-        # deux appels capent a 30 fps tout en renvoyant le dt d'une image de
-        # 60 fps. Tout ce qui avance avec dt tournait au tiers de sa vitesse.
         dt = clock.tick(60) / 1000.0
         STATS["triangles"] = 0
         for event in ui.event.get():
@@ -157,8 +133,6 @@ def gui(screen: ui.Surface, sync):
         started = sync.update(t) if t >= 0 else []
 
         if t >= 0:
-            # update() rend chaque note une seule fois, a son debut : aucun
-            # anti-spam n'est necessaire et aucune note n'est perdue.
             for note in started:
                 spawn_note(note, sync, sky, fireworks, markers, clouds)
 
@@ -183,7 +157,6 @@ def gui(screen: ui.Surface, sync):
                 if not cloud.is_out_of_screen(SCREEN_WIDTH):
                     clouds_left.append(cloud)
 
-        #Update clouds list
         clouds = clouds_left
 
         for marker in markers:
@@ -191,17 +164,15 @@ def gui(screen: ui.Surface, sync):
             marker.draw(screen)
         markers = [m for m in markers if not m.dead]
 
-        mountains.update(dt, train.speed * 0.2)
-        ridge_mid.update(dt, train.speed * 0.5)
-        ridge_fore.update(dt, train.speed * 0.8)
+        mountains.update(dt, train.speed * 0.2, sync.band(t, 0) if t >= 0 else 0.0)
+        ridge_mid.update(dt, train.speed * 0.5, sync.band(t, 1) if t >= 0 else 0.0)
+        ridge_fore.update(dt, train.speed * 0.8, sync.band(t, 2) if t >= 0 else 0.0)
 
-        #Draw the mountains, teintees par l'heure du jour
         for ridge in mountain_chains:
-            ridge.draw(screen, sky)
+            ridge.draw(screen, sky=sky)
 
         birds.draw(screen, PLANE_MID)
 
-        #Update the season's managment
         mg_season.update(dt, sky.total_phases, screen, mountain_chains)
 
         if fireworks:
@@ -215,7 +186,7 @@ def gui(screen: ui.Surface, sync):
 
             fireworks = fireworks_left
 
-        curveTrack.update(dt, train.speed * 1.5)
+        curveTrack.update(dt, t)
         train.update(dt)
 
         y_center, angle = curveTrack.get_info_track(train_x, train.length)
@@ -225,12 +196,9 @@ def gui(screen: ui.Surface, sync):
         smoke.update(dt, sx, sy, wind=train.speed)
         scroll -= train.speed * dt
 
-        #draw_rails(screen, RAIL_Y, scroll)
         curveTrack.draw(screen)
         smoke.draw(screen, oy=y_center)
         train.draw(screen, ox=train_x, oy=0, angle=angle, pivot=pivot, track=curveTrack)
-        # flip() en dernier : appele avant, il presentait l'image sans les
-        # oiseaux du plan proche, que le ciel effacait a l'image suivante.
         birds.draw(screen, PLANE_NEAR)
         ui.display.flip()
 

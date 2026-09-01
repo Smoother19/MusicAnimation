@@ -182,7 +182,7 @@ class Train(Group):
 
             if track is not None:
                 y_center, child_angle = track.get_info_track(world_x, child.length)
-                child_pivot = (world_x + child.length / 2, RAIL_Y)
+                child_pivot = (world_x + child.length / 2, y_center)
                 child_oy = oy + self.y + (y_center - RAIL_Y)
             else:
                 child_angle = angle

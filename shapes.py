@@ -203,47 +203,37 @@ class Curve(TriangularShape):
         return triangles
 
 class CurvesTrack():
-    def __init__(self, y_base, chunk_length=400, amplitude=100):
-        '''
-        Create a track of multiple curves
-        '''
-        self.y_base = y_base
-        self.chunk_length = chunk_length
-        self.amplitude = amplitude
-        self.scroll = 0.0
-        self.chunks = []
-        self.half = 1
 
-        x = 0
-        last_y = y_base
-        while x < SCREEN_WIDTH + chunk_length:
-            chunk, _ = self.make_chunk(x, last_y)
-            self.chunks.append(chunk)
-            real_end = chunk.point_at(1.0)
-            x = real_end[0]
-            last_y = real_end[1]
+    RAIL_COLORS = ((52, 48, 44), (107, 103, 92))
+    GROUND_COLOR = (25, 28, 38)
+
+    DIRECTION = -1
+
+    def __init__(self, y_base, sync, span=380, width=8, step=8,
+                 px_per_s=SPEED, anchor_x=SCREEN_WIDTH / 2):
+        self.y_base = y_base
+        self.sync = sync
+        self.span = span
+        self.width = width
+        self.step = step
+        self.px_per_s = px_per_s
+        self.anchor_x = anchor_x
+        self.t = 0.0
+
+    def time_at(self, x_screen):
+        return self.t + self.DIRECTION * (x_screen - self.anchor_x) / self.px_per_s
 
     def get_height(self, x_screen):
-        '''
-        Return the height of the road based of the x of the screen
-        '''
-        chunk_x = x_screen - self.scroll
+        t = self.time_at(x_screen)
+        # relief <= 1 et |2p - 1| <= 1, donc la voie reste dans la plage.
+        d = self.sync.relief(t) * (2 * self.sync.profile(t) - 1)
+        return self.y_base - 0.5 * self.span * d
 
-        for chunk in self.chunks:
-            lo, hi = sorted((chunk.p_start[0], chunk.p_end[0])) #manage both side
-            #check if the x is in the range
-            if lo <= chunk_x <= hi:
-                span = chunk.p_end[0] - chunk.p_start[0]
-                t = (chunk_x - chunk.p_start[0]) / span
-                t = max(0, min(1, t)) #if x is in border
-                return chunk.point_at(t)[1] #get y of the point in (t, y)
-
-        #Fall back
-        closest_chunk = min(self.chunks, key=lambda c: min(abs(chunk_x - c.p_start[0]), abs(chunk_x - c.p_end[0])))
-        lo, hi = sorted((closest_chunk.p_start[0], closest_chunk.p_end[0]))
-        t = 0.0 if abs(chunk_x - lo) < abs(chunk_x - hi) else 1.0
-        return closest_chunk.point_at(t)[1]
-
+    def update(self, dt, t=None):
+        if t is not None and t >= 0:
+            self.t = t
+        else:
+            self.t += dt
 
     def get_info_track(self, x_screen, length):
         '''
@@ -255,8 +245,10 @@ class CurvesTrack():
         back_y = self.get_height(back_x)
         front_y = self.get_height(front_x)
 
-        #To remove the space between the wagon
-        MAX_LEAN_ANGLE = math.radians(35)
+        # Chaque wagon suit la voie sur sa propre longueur (~150 px), pas sur
+        # les 582 px du train entier. Avec des pentes franches la bride a 35
+        # degres coupait un passage sur quinze et decollait le wagon du rail.
+        MAX_LEAN_ANGLE = math.radians(50)
         angle = math.atan2(front_y - back_y, front_x - back_x)
 
         angle = max(-MAX_LEAN_ANGLE, min(MAX_LEAN_ANGLE, angle))
@@ -264,70 +256,23 @@ class CurvesTrack():
 
         return y_center, angle
 
-    def make_chunk(self, start_x, start_y, direction=1):
-        '''
-        Create new chunk to be added on the screen
-        '''
-        end_x = start_x + direction * self.chunk_length
-        end_y = self.y_base
-        type_curve, a, b, c = Curve.get_random_params()
-
-        if self.half % 2 == 0:
-            chunk = Curve((start_x, start_y), (end_x, end_y), 8, (52, 48, 44), type_curve, a, b, c, amplitude=self.amplitude)
-        else:
-            chunk = Curve((start_x, start_y), (end_x, end_y), 8, (107, 103, 92), type_curve, a, b, c, amplitude=self.amplitude)
-        self.half += 1
-        
-        return chunk, end_y
-
-    def _left_point(self, chunk):
-        if chunk.p_start[0] <= chunk.p_end[0]:
-            return chunk.p_start
-        else:
-            return chunk.point_at(1.0)
-
-    def update(self, dt, speed):
-        self.scroll += speed * dt  # sens inversé
-
-        last = self.chunks[-1]
-        left_x = min(last.p_start[0], last.p_end[0]) + self.scroll  # bord gauche du dernier chunk
-
-        if left_x > SCREEN_WIDTH:
-            self.chunks.pop(-1)
-            first_chunk = self.chunks[0]
-            real_start = self._left_point(first_chunk)
-
-            new_chunk, _ = self.make_chunk(real_start[0], real_start[1], direction=-1)
-            self.chunks.insert(0, new_chunk)
-
     def draw(self, screen):
-        ground_color = (25, 28, 38)
+        xs = range(0, SCREEN_WIDTH + self.step, self.step)
+        points = [(x, self.get_height(x)) for x in xs]
 
-        track_points = []
+        for (x0, y0), (x1, y1) in zip(points, points[1:]):
+            TrianglePoints((x0, y0), (x0, SCREEN_HEIGHT), (x1, y1),
+                           0, 0, self.GROUND_COLOR).draw(screen)
+            TrianglePoints((x0, SCREEN_HEIGHT), (x1, SCREEN_HEIGHT), (x1, y1),
+                           0, 0, self.GROUND_COLOR).draw(screen)
 
-        for chunk in self.chunks:
-            pts = chunk.get_points()
-            for i in range(len(pts) -1):
-                top_left = (pts[i][0] + self.scroll, pts[i][1])
-                top_right = (pts[i+1][0] + self.scroll, pts[i+1][1])
-
-                bottom_left = (top_left[0], SCREEN_HEIGHT)
-                bottom_right = (top_right[0], SCREEN_HEIGHT)
-
-                t1 = TrianglePoints(top_left, bottom_left, top_right, 0, 0, ground_color)
-                t2 = TrianglePoints(bottom_left, bottom_right, top_right, 0, 0, ground_color)
-
-                t1.draw(screen)
-                t2.draw(screen)
-        
-        for chunk in self.chunks:
-            chunk.draw(screen, ox=self.scroll, oy=0)
-
-        for chunk in self.chunks:
-            joint = chunk.point_at(1.0)
-            patch = Circle(joint[0] + self.scroll, joint[1], chunk.width /2, chunk.color, 10)
-            patch.draw(screen)
-
+            # Une traverse par demi-seconde de musique : la voie sert aussi
+            # de reglet, on voit defiler le tempo.
+            color = self.RAIL_COLORS[int(self.time_at(x0) * 2) % 2]
+            TrianglePoints((x0, y0), (x1, y1), (x0, y0 + self.width),
+                           0, 0, color).draw(screen)
+            TrianglePoints((x1, y1), (x1, y1 + self.width), (x0, y0 + self.width),
+                           0, 0, color).draw(screen)
 
 class TrianglePoints(TriangularShape):
     '''
