@@ -10,15 +10,17 @@ def decode():
 
     print("\nStarting to decode midi file...")
 
-    beats = midi_data.get_beats()
-    intervals, pitches = midi_data.get_intervals_and_pitches()
     times, tempos = midi_data.get_tempo_changes()
 
+    notes = [(n.start, n.end, lr.midi_to_hz(n.pitch), inst.name or "piano")
+             for inst in midi_data.instruments for n in inst.notes]
+    notes.sort(key=lambda row: row[0])
+
     print(f"BPM : {tempos.max()}")
-    print(f"Nbre de notes : {len(intervals)}")
+    print(f"Nbre de notes : {len(notes)}")
+    for inst in midi_data.instruments:
+        print(f"  {inst.name or 'piano'} : {len(inst.notes)} notes")
 
-    arr_fusionne = np.column_stack((intervals, pitches))
-
-    return arr_fusionne, tempos.max()
+    return notes, tempos.max()
 
     

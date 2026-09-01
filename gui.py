@@ -9,6 +9,7 @@ from moutains import Mountains
 from season import Season
 import random
 from smokeemitter import SmokeEmitter
+from particle import Particle
 from config import *
 from pathlib import Path
 import os
@@ -16,6 +17,20 @@ from sync import SyncMusic
 from midiDecoder import decode
 from sky import Sky
 from birds import *
+
+# Magenta -> cyan plutot que orange -> bleu : les feuilles d'automne, la
+# pluie et la neige occupent deja l'orange, le jaune et le blanc.
+NOTE_LOW = (255, 90, 170)      # grave
+NOTE_HIGH = (110, 230, 255)    # aigu
+MAX_CLOUDS = 10
+MAX_FIREWORKS = 10
+
+# Quel instrument recoit les feux d'artifice. La melodie par defaut : elle
+# ne fait que 173 des 716 notes, donc elle tient dans le budget d'images,
+# et c'est elle qu'on suit a l'oreille. Mettre "piano" ici rend la main a
+# l'accompagnement, au prix mesure de 31 a 19 images par seconde.
+ACCENT = "trumpet"
+
 
 def draw_rails(screen, y, offset):
     ui.draw.polygon(screen, (52, 48, 44),
@@ -31,9 +46,61 @@ def draw_shapes(screen, shapes):
     for shape in shapes:
         shape.draw(screen)
 
+
+def note_color(ratio):
+    'Du chaud au froid selon la hauteur : la couleur seule situe la note.'
+    return tuple(int(a + (b - a) * ratio) for a, b in zip(NOTE_LOW, NOTE_HIGH))
+
+
+def dim(color, k):
+    return tuple(int(c * k) for c in color)
+
+
+def spawn_note(note, sync, sky, fireworks, markers, clouds):
+    '''
+    Un visuel par note, place en hauteur selon sa hauteur reelle.
+
+    Deux couches. Le marqueur, toujours, garantit que toutes les notes se
+    voient : avec les anciens seuils absolus et leur conditionnement au
+    jour et a la nuit, 18 % seulement mettaient quelque chose a l'ecran.
+    L'accent par-dessus dit l'instrument, et il est plafonne en nombre
+    plutot que bride au chronometre, pour ne jamais rater une note faute
+    d'avoir attendu assez longtemps.
+    '''
+    r = sync.ratio(note)
+    y = RAIL_Y - 40 - r * (RAIL_Y - 160)
+    color = note_color(r)
+
+    if note["instrument"] == ACCENT:
+        # La melodie reste au centre : les notes s'empilent et le contour
+        # melodique se lit verticalement.
+        x = SCREEN_WIDTH / 2 + random.uniform(-140, 140)
+        if len(fireworks) < MAX_FIREWORKS:
+            fireworks.append(Fireworks(x, y, color, nb_rays=14,
+                                       max_speed=5 + 5 * r,
+                                       lifespan=int(30 + 40 * min(1.0, note["duration"]))))
+            return
+    else:
+        x = random.uniform(60, SCREEN_WIDTH - 60)
+        # Les nuages restent diurnes : de nuit ce sont des ellipses grises
+        # posees dans le ciel etoile.
+        if r > 0.85 and not sky.is_night and len(clouds) < MAX_CLOUDS:
+            params = list(Cloud.get_random_param())
+            params[1] = (x, y)
+            params[2] = sky.tint((255, 255, 255), 0.45)
+            clouds.append(Cloud(*params))
+
+    # Le marqueur s'eteint vers sa propre teinte assombrie, pas vers le
+    # fond : fondu au fond il disparait en trois images.
+    markers.append(Particle(x, y, color, fade_to=dim(color, 0.25),
+                            lifetime=max(0.45, min(1.6, note["duration"])),
+                            size=14 + 22 * (1 - r)))
+
+
 def gui(screen: ui.Surface, sync):
     clouds = []
     fireworks = []
+    markers = []
     RUNNING = True
     frame = 0
     clock = ui.time.Clock()
@@ -59,9 +126,11 @@ def gui(screen: ui.Surface, sync):
     mountain_chains = [mountains, ridge_mid, ridge_fore]
 
     while RUNNING:
+        # Un seul tick par image : tick() attend pour caper la boucle, donc
+        # deux appels capent a 30 fps tout en renvoyant le dt d'une image de
+        # 60 fps. Tout ce qui avance avec dt tournait au tiers de sa vitesse.
         dt = clock.tick(60) / 1000.0
         STATS["triangles"] = 0
-        dt = clock.tick(60) / 1000.0
         for event in ui.event.get():
             if event.type == ui.QUIT:
                 RUNNING = False
@@ -73,6 +142,12 @@ def gui(screen: ui.Surface, sync):
                 elif event.key == ui.K_c:
                     params = Cloud.get_random_param()
                     clouds.append(Cloud(*params))
+                elif event.key == ui.K_LEFTBRACKET:
+                    sync.latency -= 0.010
+                    print(f"latence {1000 * sync.latency:+.0f} ms")
+                elif event.key == ui.K_RIGHTBRACKET:
+                    sync.latency += 0.010
+                    print(f"latence {1000 * sync.latency:+.0f} ms")
                 elif event.key == ui.K_f:
                     params = Fireworks.get_random_params()
                     fw = Fireworks(*params)
@@ -80,53 +155,41 @@ def gui(screen: ui.Surface, sync):
 
         t = ui.mixer.music.get_pos() / 1000.0
         started = sync.update(t) if t >= 0 else []
-        
-        # Initialisation des chronomètres anti-spam si ce n'est pas déjà fait
-        if not hasattr(gui, "last_firework_time"):
-            gui.last_firework_time = 0.0
-        if not hasattr(gui, "last_cloud_time"):
-            gui.last_cloud_time = 0.0
 
         if t >= 0:
-            # 1. Le Piano déclenche les feux d'artifice (N'importe quand)
-            if sync.check_piano_trigger(t) and (t - gui.last_firework_time > 0.4):
-                fireworks.append(Fireworks(*Fireworks.get_random_params()))
-                gui.last_firework_time = t  
-                
-            # 2. La Trompette déclenche l'apparition de nuages (N'importe quand)
-            if sync.check_trumpet_trigger(t) and (t - gui.last_cloud_time > 0.8):
-                params = list(Cloud.get_random_param())
-                params[2] = sky.tint((255, 255, 255), 0.45)  
-                clouds.append(Cloud(*params))
-                gui.last_cloud_time = t  
+            # update() rend chaque note une seule fois, a son debut : aucun
+            # anti-spam n'est necessaire et aucune note n'est perdue.
+            for note in started:
+                spawn_note(note, sync, sky, fireworks, markers, clouds)
 
-            # Gestion de la vitesse du train avec la densité globale
+            # Vitesse du train pilotee par la densite globale
             target = SPEED * sync.speed_factor(t)
             train.speed += (target - train.speed) * min(1.0, dt * 0.8)
 
         sky.update(dt, t, started)
         birds.update(dt, t, started, sky, train.speed)
 
-
         sky.draw(screen)
         birds.draw(screen, PLANE_FAR)
-                
-       
-        STATS["triangles"] = 0
+
         clouds_left = []
         #Test if the cloudas list is not empty
         if clouds:
-            clouds_left = []
             for cloud in clouds:
                 cloud.draw(screen)
                 cloud.moving_cloud(train.speed/16)
-                
+
                 #Add to temp list the non valid clouds
                 if not cloud.is_out_of_screen(SCREEN_WIDTH):
                     clouds_left.append(cloud)
-            
-            #Update clouds list 
-            clouds = clouds_left
+
+        #Update clouds list
+        clouds = clouds_left
+
+        for marker in markers:
+            marker.update(dt, wind=train.speed * 0.15)
+            marker.draw(screen)
+        markers = [m for m in markers if not m.dead]
 
         mountains.update(dt, train.speed * 0.2)
         ridge_mid.update(dt, train.speed * 0.5)
@@ -136,13 +199,11 @@ def gui(screen: ui.Surface, sync):
         for ridge in mountain_chains:
             ridge.draw(screen, sky)
 
-        ridge.draw(screen, sky)
-        
-        birds.draw(screen, PLANE_MID) 
+        birds.draw(screen, PLANE_MID)
 
         #Update the season's managment
         mg_season.update(dt, sky.total_phases, screen, mountain_chains)
-        
+
         if fireworks:
             fireworks_left = []
             for fw in fireworks:
@@ -154,8 +215,6 @@ def gui(screen: ui.Surface, sync):
 
             fireworks = fireworks_left
 
-        #Update clouds list
-        clouds = clouds_left
         curveTrack.update(dt, train.speed * 1.5)
         train.update(dt)
 
@@ -165,13 +224,15 @@ def gui(screen: ui.Surface, sync):
         sx, sy = train.smoke_position(train_x, 0)
         smoke.update(dt, sx, sy, wind=train.speed)
         scroll -= train.speed * dt
-        
+
         #draw_rails(screen, RAIL_Y, scroll)
         curveTrack.draw(screen)
         smoke.draw(screen, oy=y_center)
         train.draw(screen, ox=train_x, oy=0, angle=angle, pivot=pivot, track=curveTrack)
-        ui.display.flip()
+        # flip() en dernier : appele avant, il presentait l'image sans les
+        # oiseaux du plan proche, que le ciel effacait a l'image suivante.
         birds.draw(screen, PLANE_NEAR)
+        ui.display.flip()
 
         frame += 1
         if frame % 30 == 0:
