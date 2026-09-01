@@ -187,13 +187,17 @@ class Constellation:
         if night < 0.6:
             return
 
-        line_brightness = (night - 0.6) * 0.4
-        line_color = lerp_color(sky_color, (255, 255, 255), line_brightness)
-
-        thickness = 0.8
-        hw = thickness / 2.0
+        base_brightness = (night - 0.6) * 0.4
 
         for star_a, star_b in self.lines:
+            avg_flash = (star_a.flash + star_b.flash) / 2.0
+
+            line_brightness = min(1.0, base_brightness + (avg_flash * 2.5))
+            line_color = lerp_color(sky_color, (255, 255, 255), line_brightness)
+
+            thickness = 1.5 + (avg_flash * 8.0)
+            hw = thickness / 2.0
+
             # Angle between 2 stars
             dx = star_b.x - star_a.x
             dy = star_b.y - star_a.y
@@ -290,8 +294,13 @@ class Sky:
         for note in notes:
             body = self.sun if self.sun.elevation >= self.moon.elevation else self.moon
             body.hit(0.10 + 0.30 * min(1.0, self.energy + 0.3))
-            if note["pitch"] > 70 and self.is_night:
+            if note["pitch"] >= 60 and self.is_night:
                 random.choice(self.stars).flash = 1.0
+                
+                for const in self.constellations:
+                    for star_a, star_b in const.lines:
+                        star_a.flash = 1.0
+                        star_b.flash = 1.0
 
         self.sun.update(dt)
         self.moon.update(dt)
