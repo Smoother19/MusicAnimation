@@ -1,19 +1,48 @@
 import pretty_midi
 
 from config import MAX_NOTES, MIDI_PROGRAMS
-from notes import transcribe
+from notes import transcribe, merge_fragments
 from instruments import measure, label, enforce_monophony
-from timing import onset_times, snap_starts, decay_ends, clip_to_next
+from timing import onset_times, split_on_onsets, snap_starts, decay_ends, clip_to_next
+from harmonics import decompose, validate
 
-def analyze(path, max_notes=MAX_NOTES, classify=True, refine_timing=True):
+
+def analyze(path, max_notes=MAX_NOTES, classify=True, refine_timing=True,
+            validate_notes=True):
+    """Transcribe an audio file into notes.
+
+    Five stages, each answering one failure of the previous version:
+
+    1. the salience engine reports the pitches present in every frame;
+    2. the frames are grouped into notes;
+    3. the spectrum is decomposed over those notes, and each one is cut
+       at the attacks where its own amplitude rises, so a key struck
+       three times stops being one held note without a held note being
+       shredded every time another instrument plays over it;
+    4. the spectrum is decomposed again over the cut notes: the ones the
+       model does not need are dropped, the others are measured;
+    5. the timing is pulled onto the detected onsets and the three timbre
+       tests name the instrument.
+    """
     y, notes = transcribe(path, max_notes)
+    onsets = onset_times(y)
+
+    # First decomposition: whole notes, to find each one's own re-attacks.
+    notes = split_on_onsets(notes, onsets, decompose(y, notes))
+    notes = merge_fragments(notes, onsets)
+    notes = snap_starts(notes, onsets)
+
+    # Second decomposition: the cut notes, for validation and timbre.
+    harmonics = decompose(y, notes)
+    if validate_notes:
+        notes, harmonics = validate(notes, harmonics)
 
     if refine_timing:
         decay_ends(y, notes, ratio=0.15)
         clip_to_next(notes)
 
     if classify:
-        measure(y, notes)
+        measure(y, notes, harmonics)
         label(notes)
         enforce_monophony(notes)
 
@@ -53,7 +82,7 @@ def decode(audio_path, midi_path=None):
 
 
 if __name__ == "__main__":
-    AUDIO = "./sounds/PinkPanther_Both.mp3"
+    AUDIO = "./sounds/Ecossaise_Both.mp3"
     OUTPUT = "transcription_2tracks.mid"
 
     notes = analyze(AUDIO)

@@ -8,10 +8,10 @@ inputfile = "La_Pantera.mp3"
 
 def main():
     #isMidi = mp3toMidi.decode(inputfile)
-    isMidi = mp3toMidi_RMS.decode(inputfile)
-    #isMidi = mp3toMidi_salience.decode(inputfile)
+    #isMidi = mp3toMidi_RMS.decode(inputfile)
+    isMidi = mp3toMidi_salience.decode(inputfile)
 
-    midi_array, bpm = midiDecoder.decode()
+    # midi_array, bpm = midiDecoder.decode()
     gui.start_gui(isMidi)
 
 if __name__ == "__main__":
