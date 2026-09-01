@@ -11,10 +11,55 @@ class Leaf(TriangularShape):
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.palette = palette_couleurs
+
+        #self.axiom = "F++F++F"  #based triangle it's a full circled leaf
+        self.axiom = "F+F+F+F+F" #erable leaf
+        self.rules = {"F": "F-F++F-F"} # Each edge becomes serrated
+        self.iteration = 2
+
+        self.local_points = self._build_local_contour()
         
         # Counter for each leaf to make it fall randomly
         self.time = random.uniform(0, 100) 
         self._respawn(random.uniform(0, screen_height))
+
+    def _build_local_contour(self):
+        '''
+        Take the L-System to create the leaf
+        '''
+        current = self.axiom
+
+        for _ in range(self.iteration):
+            next_string = ""
+            for char in current:
+                next_string += self.rules.get(char, char)
+            current = next_string
+
+        points = []
+        x, y = 0.0, 0.0
+        angle = 0.0
+        step = 1.0
+
+        for char in current:
+            if char == 'F':
+                x += math.cos(angle) * step
+                y += math.sin(angle) * step
+                points.append((x, y))
+            elif char == '+':
+                angle += math.radians(72) # to create a pantagon
+            elif char == '-':
+                angle -= math.radians(72)
+
+        min_x = min(p[0] for p in points)
+        max_x = max(p[0] for p in points)
+        min_y = min(p[1] for p in points)
+        max_y = max(p[1] for p in points)
+
+        cx, cy = (min_x + max_x) / 2, (min_y + max_y) / 2
+
+        stretch_x = random.uniform(1.1, 1.4)
+        stretch_y = random.uniform(0.9, 1.1)
+        return[((p[0] - cx) * stretch_x, (p[1]- cy) * stretch_y) for p in points]
 
     def _respawn(self, y):
         # Give random params when the leaf's respawn
@@ -23,7 +68,7 @@ class Leaf(TriangularShape):
         self.y = y
 
         
-        self.size = random.uniform(8, 16)
+        self.size = random.uniform(0.8, 2)
         self.speed_y = random.uniform(40, 100)  # Fall speed
         self.speed_x = random.uniform(1, 3)     # Swinging speed (left/right)
         self.sway_amount = random.uniform(20, 60) # Amplitude of the swing
@@ -56,26 +101,27 @@ class Leaf(TriangularShape):
         cos_a = math.cos(self.angle)
         sin_a = math.sin(self.angle)
 
-        hw = self.size * 0.4 # half-width
-        hl = self.size       # half-length
+        transformed_points = []
+        for px, py in self.local_points:
+            # Scale
+            px *= self.size
+            py *= self.size
+            # Rotation
+            rx = px * cos_a - py * sin_a
+            ry = px * sin_a + py * cos_a
+            # Final position
+            transformed_points.append((self.x + rx, self.y + ry))
 
-        # the coins of the 2 triangles
-        pts = [(0, -hl), (hw, 0), (0, hl), (-hw, 0)]
+        # Create the triangles
+        triangles = []
+        center = (self.x, self.y)
+        
+        for i in range(len(transformed_points)):
+            p1 = transformed_points[i]
+            p2 = transformed_points[(i + 1) % len(transformed_points)]            
+            triangles.append([center, p1, p2])
 
-        # Rotate and position the 4 points on the screen.
-        rotated = []
-        for px, py in pts:
-            rx = self.x + (px * cos_a - py * sin_a)
-            ry = self.y + (px * sin_a + py * cos_a)
-            rotated.append((rx, ry))
-
-        p_top, p_right, p_bottom, p_left = rotated
-
-        # create a diamond with 2 triangles
-        return [
-            [p_top, p_left, p_right],
-            [p_bottom, p_left, p_right]
-        ]
+        return triangles
 
 
 class LeavesManager:

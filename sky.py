@@ -149,6 +149,75 @@ class Star(Circle):
         self.color = lerp_color(sky_color, (255, 255, 255), brightness)
         self.draw(screen)
 
+class Constellation:
+    '''
+    Link some star to create a new constellation
+    '''
+    def __init__(self, all_stars, max_lines=4, max_dist=150):
+        self.lines=[]
+
+        if len(all_stars) < 2:
+            return
+
+        current_star = random.choice(all_stars)
+        used_stars = {current_star}
+
+        for _ in range(max_lines):
+            neighbors = []
+
+            for star in all_stars:
+                if star not in used_stars:
+                    dist = math.hypot(star.x - current_star.x, star.y - current_star.y)
+                    if dist < max_dist:
+                        neighbors.append(star)
+
+            if not neighbors:
+                return
+
+            next_star = random.choice(neighbors)
+            self.lines.append((current_star, next_star))
+            used_stars.add(next_star)
+
+            if random.random() < 0.85: #85% of chance to create a line
+                current_star = next_star
+            else:
+                current_star = random.choice(list(used_stars))
+
+    def draw_at(self, screen, night, sky_color):
+        if night < 0.6:
+            return
+
+        base_brightness = (night - 0.6) * 0.4
+
+        for star_a, star_b in self.lines:
+            avg_flash = (star_a.flash + star_b.flash) / 2.0
+
+            line_brightness = min(1.0, base_brightness + (avg_flash * 2.5))
+            line_color = lerp_color(sky_color, (255, 255, 255), line_brightness)
+
+            thickness = 1.5 + (avg_flash * 8.0)
+            hw = thickness / 2.0
+
+            # Angle between 2 stars
+            dx = star_b.x - star_a.x
+            dy = star_b.y - star_a.y
+            angle = math.atan2(dy, dx)
+            
+            # Angle perpendicular for thickness
+            perp = angle + math.pi / 2
+            
+            cos_p = math.cos(perp) * hw
+            sin_p = math.sin(perp) * hw
+            
+            # Create the 4 coins
+            p1 = (star_a.x + cos_p, star_a.y + sin_p)
+            p2 = (star_a.x - cos_p, star_a.y - sin_p)
+            p3 = (star_b.x - cos_p, star_b.y - sin_p)
+            p4 = (star_b.x + cos_p, star_b.y + sin_p)
+            
+            # Draw with Quad
+            line_quad = Quad([p1, p2, p3, p4], line_color)
+            line_quad.draw(screen)
 
 class Sky:
     '''
@@ -192,6 +261,8 @@ class Sky:
         self.moon.set_phase(self.phase + 0.5)
 
         self.stars = [Star() for _ in range(nb_stars)]
+        nb_constellation = random.randint(3, 6)
+        self.constellations = [Constellation(self.stars) for _ in range(nb_constellation)]
         self.top_color = DAY_TOP
         self.bottom_color = DAY_BOTTOM
 
@@ -223,8 +294,13 @@ class Sky:
         for note in notes:
             body = self.sun if self.sun.elevation >= self.moon.elevation else self.moon
             body.hit(0.10 + 0.30 * min(1.0, self.energy + 0.3))
-            if note["pitch"] > 70 and self.is_night:
+            if note["pitch"] >= 60 and self.is_night:
                 random.choice(self.stars).flash = 1.0
+                
+                for const in self.constellations:
+                    for star_a, star_b in const.lines:
+                        star_a.flash = 1.0
+                        star_b.flash = 1.0
 
         self.sun.update(dt)
         self.moon.update(dt)
@@ -296,6 +372,8 @@ class Sky:
         if night > 0.05:
             for star in self.stars:
                 star.draw_at(screen, night, self.sky_color_at(star.y))
+            for const in self.constellations:
+                const.draw_at(screen, night, self.sky_color_at(0))
 
         if self.moon.visible:
             self.draw_moon(screen)
