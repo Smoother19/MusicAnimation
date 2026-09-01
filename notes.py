@@ -4,22 +4,20 @@ import librosa
 import numpy as np
 
 from config import (SR, N_FFT, HOP, MAX_NOTES, SILENCE_THRESHOLD, MIN_FRAMES,
-                    GAP_TOLERANCE, MIDI_MIN, MIDI_MAX, midi_to_hz, hz_to_midi)
+                    GAP_TOLERANCE, MIDI_MIN, MIDI_MAX, MERGE_GAP,
+                    midi_to_hz, hz_to_midi)
 from salience import detect
 
 
 @dataclass
 class Note:
-    """A detected note. Times are in frames; use seconds() to convert.
-
-    slope, vibrato and instrument are filled in by the instruments module.
-    start_s and end_s are set by the timing module when available.
-    """
     midi: int
     start: int
     end: int
-    slope: float | None = None
-    vibrato: float | None = None
+    sustain: float | None = None
+    flatness: float | None = None
+    rolloff: float | None = None
+    score: float = 0.0
     instrument: str | None = None
     start_s: float | None = None
     end_s: float | None = None
@@ -36,6 +34,21 @@ class Note:
         start = self.start_s if self.start_s is not None else self.start * HOP / SR
         end = self.end_s if self.end_s is not None else self.end * HOP / SR
         return start, end
+
+    def set_start(self, seconds):
+        self.start_s = seconds
+        self.start = max(0, int(round(seconds * SR / HOP)))
+
+    def set_end(self, seconds):
+        self.end_s = seconds
+        self.end = max(self.start + 1, int(round(seconds * SR / HOP)))
+
+    def respan(self, start_seconds, end_seconds):
+        """A copy of this note over a new time span, descriptors dropped."""
+        note = Note(midi=self.midi, start=self.start, end=self.end)
+        note.set_start(start_seconds)
+        note.set_end(end_seconds)
+        return note
 
 
 def _pitches_per_frame(y, max_notes):
@@ -102,6 +115,33 @@ def _group(frames):
             open_notes.setdefault(p, i)
 
     return notes
+
+
+def merge_fragments(notes, onsets, gap=MERGE_GAP):
+    """Glue back the fragments of a single note.
+
+    Two pieces of the same pitch that touch are one note again, unless an
+    attack sits on the seam: that seam is exactly what split_on_onsets
+    was for.
+    """
+    out, pending = [], {}
+    for note in sorted(notes, key=lambda n: (n.midi, n.seconds()[0])):
+        start, end = note.seconds()
+        held = pending.get(note.midi)
+
+        seam = (held is not None
+                and -0.02 <= start - held.seconds()[1] < gap
+                and not (len(onsets) and np.abs(onsets - start).min() < 0.035))
+
+        if seam:
+            held.set_end(end)
+            continue
+        if held is not None:
+            out.append(held)
+        pending[note.midi] = note
+
+    out.extend(pending.values())
+    return sorted(out, key=lambda n: n.seconds()[0])
 
 
 def transcribe(path, max_notes=MAX_NOTES):

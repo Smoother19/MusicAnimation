@@ -41,6 +41,9 @@ class Fireworks(TriangularShape):
             speed = random.uniform(min_speed, max_speed) #random speed of the ray
             self.rays.append((angle, speed))
 
+        self.opacity_layer = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.alpha = 255
+
     def get_random_params():
         x = random.randint(0, SCREEN_WIDTH)
         y = random.randint(0, int(SCREEN_HEIGHT/2)) #to not have firework in the ground
@@ -52,7 +55,10 @@ class Fireworks(TriangularShape):
         Update the age of the firework
         '''
         self.age += delta
-        self.color = self.get_color()
+        self.color = self.based_color
+        #For opacity
+        new_frac = max(0, 1 - self.age / self.lifespan)
+        self.alpha = int(new_frac * 255)
 
     def is_done(self):
         '''
@@ -92,3 +98,15 @@ class Fireworks(TriangularShape):
             triangles.append([p1, p2, (tip_x, tip_y)])
 
         return triangles
+
+    def draw(self, screen, ox=0, oy=0, angle=0, pivot=None):
+        '''
+        Override of draw from TriangularShape
+        '''
+        self.opacity_layer.fill((0,0,0,0))
+
+        super().draw(self.opacity_layer, ox, oy, angle, pivot)
+
+        self.opacity_layer.set_alpha(self.alpha)
+
+        screen.blit(self.opacity_layer, (0,0))
