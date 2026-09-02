@@ -1,18 +1,19 @@
 from pathlib import Path
 from shutil import copy as cp
 
+import presets
 from transcription import analyze, write_midi
 
 MUSIC_DIR = Path("sounds")
 OUTPUT_DIR = Path("output")
 
 
-def decode(filename: str) -> bool:
-    """Transcribe an audio file to output/transcription.mid.
-
-    Returns True when the input was already a MIDI file.
-    """
+def decode(filename: str, use_preset: bool = True, strict: bool = True) -> bool:
     OUTPUT_DIR.mkdir(exist_ok=True)
+
+    if use_preset and Path(filename).suffix.lower() != ".mid":
+        if presets.load(filename, strict=strict):
+            return False
 
     if Path(filename).suffix.lower() == ".mid":
         cp(MUSIC_DIR / filename, OUTPUT_DIR / "transcription.mid")

@@ -19,8 +19,8 @@ from sky import Sky
 from birds import *
 from flowers import FlowerField
 
-MAX_CLOUDS = 10
-MAX_FIREWORKS = 10
+MAX_CLOUDS = 15
+MAX_FIREWORKS = 15
 
 NOTE_Y_LOW = 300      # note la plus grave du morceau
 NOTE_Y_HIGH = 80      # note la plus aigue

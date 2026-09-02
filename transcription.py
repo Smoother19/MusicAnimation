@@ -8,7 +8,7 @@ from harmonics import decompose, validate
 
 
 def analyze(path, max_notes=MAX_NOTES, classify=True, refine_timing=True,
-            validate_notes=True):
+            validate_notes=True, trace=None):
     """Transcribe an audio file into notes.
 
     Five stages, each answering one failure of the previous version:
@@ -23,28 +23,40 @@ def analyze(path, max_notes=MAX_NOTES, classify=True, refine_timing=True,
        model does not need are dropped, the others are measured;
     5. the timing is pulled onto the detected onsets and the three timbre
        tests name the instrument.
+
+    `trace` is an optional callback trace(label, notes) called after every
+    stage. It is what benchmark.py reads to measure the pipeline stage by
+    stage without holding a second, drifting copy of this function.
     """
+    step = trace or (lambda label, notes: None)
+
     y, notes = transcribe(path, max_notes)
+    step("groupement", notes)
     onsets = onset_times(y)
 
-    # First decomposition: whole notes, to find each one's own re-attacks.
     notes = split_on_onsets(notes, onsets, decompose(y, notes))
+    step("decoupe", notes)
     notes = merge_fragments(notes, onsets)
+    step("recollage", notes)
     notes = snap_starts(notes, onsets)
+    step("calage", notes)
 
     # Second decomposition: the cut notes, for validation and timbre.
     harmonics = decompose(y, notes)
     if validate_notes:
         notes, harmonics = validate(notes, harmonics)
+    step("validation", notes)
 
     if refine_timing:
         decay_ends(y, notes, ratio=0.15)
         clip_to_next(notes)
+        step("durees", notes)
 
     if classify:
         measure(y, notes, harmonics)
         label(notes)
         enforce_monophony(notes)
+        step("classification", notes)
 
     return notes
 
