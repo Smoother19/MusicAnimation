@@ -4,7 +4,7 @@ import midiDecoder
 import mp3toMidi_RMS
 import mp3toMidi_salience
 
-inputfile = "SuperMario.mp3"
+inputfile = "Gamme.mp3"
 
 def main():
     #isMidi = mp3toMidi.decode(inputfile)
