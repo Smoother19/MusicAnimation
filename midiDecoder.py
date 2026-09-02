@@ -1,7 +1,8 @@
 import pretty_midi as pm
-import librosa as lr
 from pathlib import Path
 import numpy as np
+
+from config import midi_to_hz
 
 def decode():
     file_dir = Path("output")
@@ -12,7 +13,7 @@ def decode():
 
     times, tempos = midi_data.get_tempo_changes()
 
-    notes = [(n.start, n.end, lr.midi_to_hz(n.pitch), inst.name or "piano")
+    notes = [(n.start, n.end, midi_to_hz(n.pitch), inst.name or "piano")
              for inst in midi_data.instruments for n in inst.notes]
     notes.sort(key=lambda row: row[0])
 
