@@ -1,13 +1,3 @@
-"""Genere les transcriptions a l'avance, pour la presentation.
-
-    python pregenerate.py                 les morceaux de demo (corpus.DEMO)
-    python pregenerate.py SuperMario.mp3 Gamme.mp3
-    python pregenerate.py --all           tout le corpus
-    python pregenerate.py --list          l'etat des presets existants
-
-Un preset deja a jour n'est pas refait ; --force le refait quand meme.
-"""
-
 import sys
 import time
 from pathlib import Path
@@ -21,9 +11,9 @@ def generate(filename, force=False):
 
     name = presets.stem(filename)
     meta = presets.describe(filename)
-    if meta and meta["up_to_date"] and meta["complete"] and not force:
-        print(f"{name:16s} deja a jour ({meta['notes']} notes, "
-              f"version {meta['algo']})")
+    if meta and meta["complete"] and not force:
+        print(f"{name:16s} deja present ({meta['notes']} notes, "
+              f"genere le {meta['generated'][:10]}) -- --force pour le refaire")
         return meta
 
     source = presets.SOUNDS / Path(filename).name
@@ -47,11 +37,9 @@ if __name__ == "__main__":
     flags = {a for a in sys.argv[1:] if a.startswith("--")}
 
     if "--list" in flags:
-        current, rows = presets.status()
-        print(f"version de l'algorithme : {current}\n")
-        for name, data, ok in rows:
-            print(f"{'OK ' if ok else '!! '}{name:16s} {data['notes']:5d} notes  "
-                  f"version {data['algo']}  {data['generated'][:16]}")
+        for name, data in presets.status():
+            print(f"{name:16s} {data['notes']:5d} notes  "
+                  f"{data['generated'][:16].replace('T', ' ')}")
         sys.exit()
 
     if args:
@@ -61,7 +49,6 @@ if __name__ == "__main__":
     else:
         targets = [Path(corpus.get(n)["mix"]).name for n in corpus.DEMO]
 
-    print(f"version de l'algorithme : {presets.fingerprint()}")
     print(f"a generer : {', '.join(targets)}\n")
     for filename in targets:
         generate(filename, force="--force" in flags)

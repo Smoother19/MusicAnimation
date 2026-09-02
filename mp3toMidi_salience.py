@@ -13,11 +13,11 @@ MUSIC_DIR = Path("sounds")
 OUTPUT_DIR = Path("output")
 
 
-def decode(filename: str, use_preset: bool = True, strict: bool = True) -> bool:
+def decode(filename: str, use_preset: bool = True) -> bool:
     OUTPUT_DIR.mkdir(exist_ok=True)
 
     if use_preset and Path(filename).suffix.lower() != ".mid":
-        if presets.load(filename, strict=strict):
+        if presets.load(filename):
             return False
 
     if Path(filename).suffix.lower() == ".mid":
@@ -27,7 +27,7 @@ def decode(filename: str, use_preset: bool = True, strict: bool = True) -> bool:
 
     from transcription import analyze, write_midi
 
-    print("aucun preset utilisable : transcription en cours, "
+    print("aucun preset pour ce morceau : transcription en cours, "
           "cela prend a peu pres la duree du morceau...")
     notes = analyze(str(MUSIC_DIR / filename))
     counts = write_midi(notes, str(OUTPUT_DIR / "transcription.mid"))
