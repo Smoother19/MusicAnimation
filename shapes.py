@@ -224,10 +224,15 @@ class CurvesTrack():
         return self.t + self.DIRECTION * (x_screen - self.anchor_x) / self.px_per_s
 
     def get_height(self, x_screen):
-        t = self.time_at(x_screen)
+        return self.height_at_time(self.time_at(x_screen))
+
+    def height_at_time(self, t):
         # relief <= 1 et |2p - 1| <= 1, donc la voie reste dans la plage.
         d = self.sync.relief(t) * (2 * self.sync.profile(t) - 1)
         return self.y_base - 0.5 * self.span * d
+
+    def x_at(self, t_music):
+        return self.anchor_x + self.DIRECTION * (t_music - self.t) * self.px_per_s
 
     def update(self, dt, t=None):
         if t is not None and t >= 0:

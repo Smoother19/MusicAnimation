@@ -13,18 +13,18 @@ from particle import Particle
 from config import *
 from pathlib import Path
 import os
-from sync import SyncMusic
+from sync import SyncMusic, signature
 from midiDecoder import decode
 from sky import Sky
 from birds import *
+from flowers import FlowerField
 
-
-NOTE_LOW = (255, 90, 170)
-NOTE_HIGH = (110, 230, 255)
 MAX_CLOUDS = 10
 MAX_FIREWORKS = 10
-NOTE_Y_LOW = 300
-NOTE_Y_HIGH = 80
+
+NOTE_Y_LOW = 300      # note la plus grave du morceau
+NOTE_Y_HIGH = 80      # note la plus aigue
+
 ACCENT = "trumpet"
 
 
@@ -44,6 +44,7 @@ def draw_shapes(screen, shapes):
 
 
 def note_color(ratio):
+    'Du chaud au froid selon la hauteur : la couleur seule situe la note.'
     return tuple(int(a + (b - a) * ratio) for a, b in zip(NOTE_LOW, NOTE_HIGH))
 
 
@@ -76,20 +77,25 @@ def spawn_note(note, sync, sky, fireworks, markers, clouds):
                             size=14 + 22 * (1 - r)))
 
 
-def gui(screen: ui.Surface, sync):
+def gui(screen: ui.Surface, sync, seed=None):
     clouds = []
     fireworks = []
     markers = []
     RUNNING = True
     frame = 0
     clock = ui.time.Clock()
-    train = Train(y=RAIL_Y, n_wagons=random.randint(2, 5))
+    # Le nombre de wagons vient de la graine lui aussi : tire sur le
+    # generateur global, il rendait la rame non reproductible malgre elle.
+    n_wagons = random.randint(2, 5) if seed is None else 2 + seed % 4
+    train = Train(y=RAIL_Y, n_wagons=n_wagons, seed=seed)
     train.set_speed(SPEED, True)
     train_x = (SCREEN_WIDTH - train.length) / 2
     scroll = 0.0
     smoke = SmokeEmitter()
 
     curveTrack = CurvesTrack(500, sync, span=380)
+
+    meadow = FlowerField(sync, curveTrack, seed=seed or 0)
 
     sky = Sky(sync)
     birds = Birds(sync)
@@ -105,6 +111,9 @@ def gui(screen: ui.Surface, sync):
     mountain_chains = [mountains, ridge_mid, ridge_fore]
 
     while RUNNING:
+        # Un seul tick par image : tick() attend pour caper la boucle, donc
+        # deux appels capent a 30 fps tout en renvoyant le dt d'une image de
+        # 60 fps. Tout ce qui avance avec dt tournait au tiers de sa vitesse.
         dt = clock.tick(60) / 1000.0
         STATS["triangles"] = 0
         for event in ui.event.get():
@@ -133,6 +142,8 @@ def gui(screen: ui.Surface, sync):
         started = sync.update(t) if t >= 0 else []
 
         if t >= 0:
+            # update() rend chaque note une seule fois, a son debut : aucun
+            # anti-spam n'est necessaire et aucune note n'est perdue.
             for note in started:
                 spawn_note(note, sync, sky, fireworks, markers, clouds)
 
@@ -157,6 +168,7 @@ def gui(screen: ui.Surface, sync):
                 if not cloud.is_out_of_screen(SCREEN_WIDTH):
                     clouds_left.append(cloud)
 
+        #Update clouds list
         clouds = clouds_left
 
         for marker in markers:
@@ -167,6 +179,8 @@ def gui(screen: ui.Surface, sync):
         mountains.update(dt, train.speed * 0.2, sync.band(t, 0) if t >= 0 else 0.0)
         ridge_mid.update(dt, train.speed * 0.5, sync.band(t, 1) if t >= 0 else 0.0)
         ridge_fore.update(dt, train.speed * 0.8, sync.band(t, 2) if t >= 0 else 0.0)
+        meadow.update(dt, sync.band(t, 2) if t >= 0 else 0.0,
+                      mg_season.season_type)
 
         for ridge in mountain_chains:
             ridge.draw(screen, sky=sky)
@@ -197,6 +211,7 @@ def gui(screen: ui.Surface, sync):
         scroll -= train.speed * dt
 
         curveTrack.draw(screen)
+        meadow.draw(screen, sky=sky)
         smoke.draw(screen, oy=y_center)
         train.draw(screen, ox=train_x, oy=0, angle=angle, pivot=pivot, track=curveTrack)
         birds.draw(screen, PLANE_NEAR)
@@ -222,12 +237,13 @@ def start_gui(isMidi: bool = False):
 
     arr, bpm = decode()
     sync = SyncMusic(arr)
-    print(f"{len(sync.notes)} notes chargees")
+    seed = signature(file_dir / filename)
+    print(f"{len(sync.notes)} notes chargees | graine du morceau : {seed}")
 
     ui.mixer.music.load(file_dir / filename)
     ui.mixer.music.play()
 
-    gui(screen, sync)
+    gui(screen, sync, seed)
 
     try:
         os.remove(file_dir / filename)

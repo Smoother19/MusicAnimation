@@ -1,5 +1,3 @@
-import numpy as np
-
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 RAIL_Y = SCREEN_HEIGHT - 180
@@ -46,7 +44,9 @@ DUSK_BOTTOM = (240, 128, 78)
 AMBIENT_NIGHT = (14, 16, 34)         # teinte vers laquelle Sky.tint() ramene la scene
 
 
+"""Shared settings for the transcription pipeline."""
 
+import numpy as np
 
 SR = 44100
 
@@ -136,3 +136,27 @@ def midi_to_hz(p):
 
 def hz_to_midi(f):
     return int(round(69 + 12 * np.log2(f / 440.0)))
+
+NOTE_LOW = (255, 90, 170)            # note la plus grave du morceau
+NOTE_HIGH = (110, 230, 255)          # note la plus aigue
+
+# ---------------------------------------------------------------- Prairie (L-systeme)
+FLOWER_SPACING = 1.0                 # facteur global d'espacement (1 = valeurs de STRATA)
+FLOWER_CLEARANCE = 14                # pixels laisses libres sous la voie
+FLOWER_ACCENT = "trumpet"            # la piste qui fleurit au premier plan
+FLOWER_FILL = 1.0                    # facteur global de hauteur (1 = valeurs de STRATA)
+FLOWER_MARGIN = 80                   # marge hors ecran ou l'on continue de dessiner
+FLOWER_MAX_DRAWN = 120               # garde-fou : plantes dessinees par image au maximum
+FLOWER_PETALS = 5                    # petales par corolle -> 2 triangles chacun
+FLOWER_SWAY = 9.0                    # amplitude du balancement en pixels, au sommet de la tige
+
+# Couleur des tiges par saison : ete, automne, hiver, printemps -- dans le
+# meme ordre que Season.mountain_palettes.
+FLOWER_STEM_COLORS = ((58, 96, 52), (122, 78, 34), (104, 116, 130), (74, 118, 60))
+
+# La saison deteint aussi sur les corolles : (couleur, force du melange).
+# Une prairie en fleurs roses sous la neige ne se lit pas comme un hiver.
+FLOWER_BLOOM_TINTS = (((255, 255, 255), 0.00),      # ete   : la note pure
+                      ((235, 150, 60), 0.40),       # automne
+                      ((228, 238, 250), 0.60),      # hiver
+                      ((255, 205, 225), 0.20))      # printemps

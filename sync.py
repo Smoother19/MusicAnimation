@@ -1,5 +1,6 @@
 import math
 import statistics
+import hashlib
 
 
 class SyncMusic():
@@ -229,3 +230,10 @@ class SyncMusic():
         if not self.notes:
             return 0.0
         return max(n["end"] for n in self.notes)
+
+def signature(path, digits=6):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(65536), b""):
+            digest.update(block)
+    return int(digest.hexdigest()[:12], 16) % (10 ** digits)
